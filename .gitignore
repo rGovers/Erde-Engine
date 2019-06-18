@@ -1,0 +1,10 @@
+.project
+.vs/
+.vscode/
+
+*.zip
+*.rar
+*.pak
+*.suo
+*.vc
+*.user
