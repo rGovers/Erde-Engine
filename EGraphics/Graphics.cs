@@ -622,7 +622,7 @@ namespace Erde.Graphics
             GL.Disable(EnableCap.DepthTest);
 
             GL.Enable(EnableCap.Blend);
-            GL.BlendFunc(BlendingFactorSrc.One, BlendingFactorDest.One);
+            GL.BlendFunc(BlendingFactor.One, BlendingFactor.One);
 
             Material material = DirectionalLight.LightMaterial;
 

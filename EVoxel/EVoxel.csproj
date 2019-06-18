@@ -44,7 +44,7 @@
     <Reference Include="System" />
     <Reference Include="System.Drawing" />
     <Reference Include="OpenTK">
-      <HintPath>..\packages\OpenTK.2.0.0\lib\net20\OpenTK.dll</HintPath>
+      <HintPath>..\packages\OpenTK.3.0.1\lib\net20\OpenTK.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

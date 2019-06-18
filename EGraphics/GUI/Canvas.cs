@@ -464,7 +464,7 @@ namespace Erde.Graphics.GUI
                 GL.Disable(EnableCap.DepthTest);
                 GL.Enable(EnableCap.Blend);
 
-                GL.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
+                GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
                 m_rootElement.Position = Vector2.Zero;
                 m_rootElement.TruePosition = Vector2.Zero;

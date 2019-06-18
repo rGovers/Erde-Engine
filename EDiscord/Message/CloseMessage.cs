@@ -30,6 +30,7 @@
 
         public CloseMessage (int a_code, string a_reason)
         {
+            m_code = a_code;
             m_reason = a_reason;
         }
     }
