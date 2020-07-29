@@ -326,9 +326,12 @@ namespace Erde.Graphics
 
         void SyncedUpdate ()
         {
-            foreach (Canvas canvas in m_gui)
+            if (m_gui != null)
             {
-                canvas.Update(new Vector2(m_window.Width, m_window.Height));
+                foreach (Canvas canvas in m_gui)
+                {
+                    canvas.Update(new Vector2(m_window.Width, m_window.Height));
+                }
             }
         }
         void ShutDown (object sender, EventArgs e)
