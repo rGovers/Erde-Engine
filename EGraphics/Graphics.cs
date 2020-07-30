@@ -8,6 +8,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace Erde.Graphics
 {
@@ -716,54 +717,63 @@ namespace Erde.Graphics
                 ShadowPass();
             }
 
-            if (Camera.CameraList != null)
+            Mutex cameraMutex = Camera.CameraMutex; 
+            if (cameraMutex != null && cameraMutex.WaitOne(2))
             {
-                foreach (Camera cam in Camera.CameraList)
+                List<Camera> cameraList = Camera.CameraList;
+                if (cameraList != null)
                 {
-                    GL.Viewport(0, 0, m_renderTarget.Width, m_renderTarget.Height);
-
-                    GL.BindFramebuffer(FramebufferTarget.FramebufferExt, m_renderTarget.BufferHandle);
-                    GL.DrawBuffers(m_drawBuffers.Length, m_drawBuffers);
-
-                    GL.Clear(cam.ClearFlags);
-
-                    camPos = cam.Transform.Translation;
-                    camForward = cam.Transform.Forward;
-
-                    frustrum = SetCameraBuffer(cam);
-
-                    if (cam.DrawSkybox)
+                    foreach (Camera cam in cameraList)
                     {
-                        SkyBoxPass();
-                    }
+                        GL.Viewport(0, 0, m_renderTarget.Width, m_renderTarget.Height);
 
-                    DeferredPass(camPos, camForward, frustrum, cam);
+                        GL.BindFramebuffer(FramebufferTarget.FramebufferExt, m_renderTarget.BufferHandle);
+                        GL.DrawBuffers(m_drawBuffers.Length, m_drawBuffers);
 
-                    GL.Viewport(cam.Viewport);
+                        GL.Clear(cam.ClearFlags);
 
-                    if (cam.RenderTexture != null)
-                    {
-                        GL.BindFramebuffer(FramebufferTarget.FramebufferExt, cam.RenderTexture.RenderBuffer);
-                    }
-                    else
-                    {
-                        GL.BindFramebuffer(FramebufferTarget.FramebufferExt, 0);
-                    }
+                        camPos = cam.Transform.Translation;
+                        camForward = cam.Transform.Forward;
 
-                    GL.Clear(ClearBufferMask.DepthBufferBit);
+                        frustrum = SetCameraBuffer(cam);
 
-                    MergePass();
+                        if (cam.DrawSkybox)
+                        {
+                            SkyBoxPass();
+                        }
 
-                    if (Light.LightList != null)
-                    {
-                        LightingPass();
-                    }
+                        DeferredPass(camPos, camForward, frustrum, cam);
 
-                    if (cam.PostProcessing != null)
-                    {
-                        cam.PostProcessing.Effect(cam.RenderTexture, cam, m_renderTarget.RenderTextures[1], m_renderTarget.RenderTextures[2], m_renderTarget.DepthBuffer);
+                        GL.Viewport(cam.Viewport);
+
+                        RenderTexture renderTexture = cam.RenderTexture;
+
+                        if (renderTexture != null)
+                        {
+                            GL.BindFramebuffer(FramebufferTarget.FramebufferExt, renderTexture.RenderBuffer);
+                        }
+                        else
+                        {
+                            GL.BindFramebuffer(FramebufferTarget.FramebufferExt, 0);
+                        }
+
+                        GL.Clear(ClearBufferMask.DepthBufferBit);
+
+                        MergePass();
+
+                        if (Light.LightList != null)
+                        {
+                            LightingPass();
+                        }
+
+                        if (cam.PostProcessing != null)
+                        {
+                            cam.PostProcessing.Effect(renderTexture, cam, m_renderTarget.RenderTextures[1], m_renderTarget.RenderTextures[2], m_renderTarget.DepthBuffer);
+                        }
                     }
                 }
+                
+                cameraMutex.ReleaseMutex();
             }
         }
 

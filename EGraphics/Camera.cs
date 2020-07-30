@@ -5,12 +5,15 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Threading;
 
 namespace Erde.Graphics
 {
     public class Camera : GameObject, IDisposable
     {
-        static LinkedList<Camera> m_cameras;
+        public static Mutex CameraMutex;
+        static List<Camera> Cameras;
+
         static Camera             m_mainCamera;
 
         Matrix4                   m_projection;
@@ -33,11 +36,11 @@ namespace Erde.Graphics
 
         RenderTexture             m_renderTexture;
 
-        public static LinkedList<Camera> CameraList
+        public static List<Camera> CameraList
         {
             get
             {
-                return m_cameras;
+                return Cameras;
             }
         }
 
@@ -173,20 +176,22 @@ namespace Erde.Graphics
             m_renderTexture = a_renderTexture;
             m_post = a_post;
 
-            if (m_cameras == null)
+            if (Cameras == null)
             {
-                m_cameras = new LinkedList<Camera>();
+                Cameras = new List<Camera>();
+                CameraMutex = new Mutex();
             }
 
-            lock (m_cameras)
+            CameraMutex.WaitOne();
             {
-                m_cameras.AddLast(this);
+                Cameras.Add(this);
 
                 if (m_mainCamera == null)
                 {
                     m_mainCamera = this;
                 }
             }
+            CameraMutex.ReleaseMutex();
         }
 
         public Vector3 ScreenToWorld (Vector3 a_screenPos)
@@ -208,15 +213,16 @@ namespace Erde.Graphics
 
             base.Dispose();
 
-            lock (m_cameras)
+            CameraMutex.WaitOne();
             {
                 if (m_mainCamera == this)
                 {
                     m_mainCamera = null;
                 }
-
-                m_cameras.Remove(this);
+    
+                Cameras.Remove(this);
             }
+            CameraMutex.ReleaseMutex();
         }
 
         ~Camera ()

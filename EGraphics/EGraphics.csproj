@@ -1,4 +1,3 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -8,7 +7,7 @@
     <RootNamespace>Erde.Graphics</RootNamespace>
     <AssemblyName>EGraphics</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
-    <TargetFrameworkProfile />
+    <TargetFrameworkProfile/>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -40,46 +39,46 @@
     <Reference Include="OpenTK, Version=3.2.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
       <HintPath>..\packages\OpenTK.3.2\lib\net20\OpenTK.dll</HintPath>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Xml" />
+    <Reference Include="System"/>
+    <Reference Include="System.Drawing"/>
+    <Reference Include="System.Xml"/>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConsoleDisplay.cs" />
-    <Compile Include="GLCommand.cs" />
-    <Compile Include="GUI\TextField.cs" />
-    <Compile Include="IPost.cs" />
-    <Compile Include="IRenderObject.cs" />
-    <Compile Include="Lights\DirectionalLight.cs" />
-    <Compile Include="Lights\Light.cs" />
-    <Compile Include="Variables\MultiRenderTexture.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="IGLObject.cs" />
-    <Compile Include="BindableContainer.cs" />
-    <Compile Include="Camera.cs" />
-    <Compile Include="Frustrum.cs" />
-    <Compile Include="Graphics.cs" />
-    <Compile Include="Pipeline.cs" />
-    <Compile Include="PipelineTime.cs" />
-    <Compile Include="GUI\Canvas.cs" />
-    <Compile Include="GUI\Element.cs" />
-    <Compile Include="GUI\Image.cs" />
-    <Compile Include="GUI\TextBox.cs" />
-    <Compile Include="Rendering\Material.cs" />
-    <Compile Include="Rendering\MeshRenderer.cs" />
-    <Compile Include="Rendering\Model.cs" />
-    <Compile Include="Rendering\Renderer.cs" />
-    <Compile Include="Rendering\Skybox.cs" />
-    <Compile Include="Shader\Shaders.cs" />
-    <Compile Include="Shader\GeometryShader.cs" />
-    <Compile Include="Shader\PixelShader.cs" />
-    <Compile Include="Shader\Program.cs" />
-    <Compile Include="Shader\VertexShader.cs" />
-    <Compile Include="Variables\CubeMap.cs" />
-    <Compile Include="Variables\RenderTexture.cs" />
-    <Compile Include="Variables\Texture.cs" />
-    <Compile Include="Variables\UniformBufferObject.cs" />
-    <Compile Include="Variables\UnsignedInt.cs" />
+    <Compile Include="ConsoleDisplay.cs"/>
+    <Compile Include="GLCommand.cs"/>
+    <Compile Include="GUI\TextField.cs"/>
+    <Compile Include="IPost.cs"/>
+    <Compile Include="IRenderObject.cs"/>
+    <Compile Include="Lights\DirectionalLight.cs"/>
+    <Compile Include="Lights\Light.cs"/>
+    <Compile Include="Variables\MultiRenderTexture.cs"/>
+    <Compile Include="Properties\AssemblyInfo.cs"/>
+    <Compile Include="IGLObject.cs"/>
+    <Compile Include="BindableContainer.cs"/>
+    <Compile Include="Camera.cs"/>
+    <Compile Include="Frustrum.cs"/>
+    <Compile Include="Graphics.cs"/>
+    <Compile Include="Pipeline.cs"/>
+    <Compile Include="PipelineTime.cs"/>
+    <Compile Include="GUI\Canvas.cs"/>
+    <Compile Include="GUI\Element.cs"/>
+    <Compile Include="GUI\Image.cs"/>
+    <Compile Include="GUI\TextBox.cs"/>
+    <Compile Include="Rendering\Material.cs"/>
+    <Compile Include="Rendering\MeshRenderer.cs"/>
+    <Compile Include="Rendering\Model.cs"/>
+    <Compile Include="Rendering\Renderer.cs"/>
+    <Compile Include="Rendering\Skybox.cs"/>
+    <Compile Include="Shader\Shaders.cs"/>
+    <Compile Include="Shader\GeometryShader.cs"/>
+    <Compile Include="Shader\PixelShader.cs"/>
+    <Compile Include="Shader\Program.cs"/>
+    <Compile Include="Shader\VertexShader.cs"/>
+    <Compile Include="Variables\CubeMap.cs"/>
+    <Compile Include="Variables\RenderTexture.cs"/>
+    <Compile Include="Variables\Texture.cs"/>
+    <Compile Include="Variables\UniformBufferObject.cs"/>
+    <Compile Include="Variables\UnsignedInt.cs"/>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EApplication\EApplication.csproj">
@@ -92,8 +91,11 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="OpenTK.dll.config" />
-    <None Include="packages.config" />
+    <None Include="OpenTK.dll.config"/>
+    <None Include="packages.config"/>
   </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <PackageReference Include="OpenTK" Version="3.2.0"/>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets"/>
 </Project>
