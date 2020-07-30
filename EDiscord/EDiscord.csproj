@@ -51,7 +51,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Client.cs" />
+    <Compile Include="DiscordClient.cs" />
     <Compile Include="Commands\CloseCommand.cs" />
     <Compile Include="Commands\ICommand.cs" />
     <Compile Include="Commands\PresenceCommand.cs" />

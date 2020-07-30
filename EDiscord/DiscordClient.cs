@@ -13,7 +13,7 @@ namespace Erde.Discord
     public delegate void Event (int a_errorCode, string a_message);
     public delegate void Join (string a_secret);
 
-    public class Client : IDisposable
+    public class DiscordClient : IDisposable
     {
         public enum e_RPCState
         {
@@ -77,7 +77,7 @@ namespace Erde.Discord
             }
         }
 
-        public Client ()
+        public DiscordClient ()
         {
             m_processID = Process.GetCurrentProcess().Id;
 
@@ -552,7 +552,7 @@ namespace Erde.Discord
 
             m_mainLoop.Join();
         }
-        ~Client ()
+        ~DiscordClient ()
         {
             Dispose(false);
         }
