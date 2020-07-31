@@ -173,7 +173,9 @@ namespace Erde.Graphics
 
             Shaders.InitShaders(this);
 
+#if DEBUG_INFO
             GLError("Pipeline: Startup: ");
+#endif
         }
 
         public void ShutDown ()
@@ -252,7 +254,9 @@ namespace Erde.Graphics
 
                 obj.ModifyObject();
 
+#if DEBUG_INFO
                 GLError("Pipeline: Input: ");
+#endif
             }
         }
 
@@ -271,7 +275,9 @@ namespace Erde.Graphics
 
                 obj.DisposeObject();
 
+#if DEBUG_INFO
                 GLError("Pipeline: Disposal: ");
+#endif
             }
         }
 
@@ -291,6 +297,7 @@ namespace Erde.Graphics
 
             Vector2 size = new Vector2(m_window.Width, m_window.Height);
 
+            GL.Viewport(0, 0, (int)size.X, (int)size.Y);
             foreach (Canvas canvas in m_gui)
             {
                 if (canvas.Visible)

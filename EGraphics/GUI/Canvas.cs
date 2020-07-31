@@ -530,7 +530,7 @@ namespace Erde.Graphics.GUI
             }
         }
 
-        public void RepaintCanvas ()
+        void RepaintCanvas ()
         {
             Element[] elements = m_elements.ToArray();
             foreach (Element element in elements)

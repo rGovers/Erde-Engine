@@ -14,9 +14,6 @@ namespace Erde.Graphics.GUI
     public class TextBox : Element, IDisposable
     {
         bool                    m_updateString;
-
-        System.Drawing.Graphics m_graphics;
-        Bitmap                  m_bitmap;
         
         Pipeline                m_pipeline;
 
@@ -76,21 +73,15 @@ namespace Erde.Graphics.GUI
         public TextBox (Brush a_brush, Font a_font, int a_width, int a_height, Pipeline a_pipeline) : base()
         {
             Size = new Vector2(a_width, a_height);
-
+            
             m_brush = a_brush;
             m_font = a_font;
-
-            m_bitmap = new Bitmap(a_width, a_height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-
-            m_graphics = System.Drawing.Graphics.FromImage(m_bitmap);
-            m_graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
-            m_graphics.Clip = new Region(new Rectangle(0, 0, a_width, a_height));
 
             m_pipeline = a_pipeline;
 
             m_updateString = true;
 
-            m_texture = new Texture(m_bitmap.Width, m_bitmap.Height, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelInternalFormat.Rgba, m_pipeline);
+            m_texture = new Texture(a_width, a_height, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelInternalFormat.Rgba, m_pipeline);
         }
 
         protected static void ExtractData (XmlNode a_node, out string a_text, out string a_fontFamily, out float a_fontSize, out int a_width, out int a_height, out Brush a_brush)
@@ -190,26 +181,41 @@ namespace Erde.Graphics.GUI
 
         void UpdateString ()
         {
-            m_graphics.Clear(Color.FromArgb(0, 0, 0, 0));
-            m_graphics.DrawString(m_text, m_font, m_brush, 0.0f, 0.0f);
+            int width = m_texture.Width;
+            int height = m_texture.Height;
 
-            BitmapData data = m_bitmap.LockBits(new Rectangle(0, 0, m_bitmap.Width, m_bitmap.Height),
+            Bitmap bitmap = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(bitmap);
+            graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
+            graphics.Clip = new Region(new Rectangle(0, 0, width, height));
+
+            graphics.DrawString(m_text, m_font, m_brush, 0.0f, 0.0f);
+            graphics.Flush();
+
+            int handle = m_texture.Handle;
+
+            GL.BindTexture(TextureTarget.Texture2D, handle);
+
+            BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height),
             ImageLockMode.ReadOnly,
             System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
-            GL.BindTexture(TextureTarget.Texture2D, m_texture.Handle);
             GL.TexImage2D(TextureTarget.Texture2D,
             0,
             PixelInternalFormat.Rgba,
-            m_bitmap.Width, m_bitmap.Height,
+            width, height,
             0,
             OpenTK.Graphics.OpenGL.PixelFormat.Bgra,
             PixelType.UnsignedByte,
             data.Scan0);
 
-            m_bitmap.UnlockBits(data);
+            bitmap.UnlockBits(data);
 
             m_updateString = false;
+
+            bitmap.Dispose();
+            graphics.Dispose();
         }
 
         internal override void Repaint ()
@@ -234,8 +240,6 @@ namespace Erde.Graphics.GUI
             Debug.Assert(a_state, string.Format("[Warning] Resource leaked {0}", GetType().ToString()));
 
             m_texture.Dispose();
-            m_bitmap.Dispose();
-            m_graphics.Dispose();
         }
 
         public void Dispose ()
