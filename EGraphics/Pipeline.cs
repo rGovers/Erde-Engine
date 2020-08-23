@@ -333,11 +333,14 @@ namespace Erde.Graphics
 
         void SyncedUpdate ()
         {
-            if (m_gui != null)
+            if (m_gui != null && m_window != null)
             {
                 foreach (Canvas canvas in m_gui)
                 {
-                    canvas.Update(new Vector2(m_window.Width, m_window.Height));
+                    if (canvas != null)
+                    {
+                        canvas.Update(new Vector2(m_window.Width, m_window.Height));
+                    }
                 }
             }
         }

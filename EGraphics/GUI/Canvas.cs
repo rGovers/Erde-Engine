@@ -8,6 +8,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Xml;
 
 namespace Erde.Graphics.GUI
@@ -91,6 +92,28 @@ namespace Erde.Graphics.GUI
             m_namedElements = new Dictionary<string, Element>();
 
             m_fileSystem = null;
+        }
+
+        Element.Interaction GetAssemblyFunction(string a_typeName, string a_functionName)
+        {
+            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+
+            foreach (Assembly asm in assemblies)
+            {
+                Type type = asm.GetType(a_typeName);
+
+                if (type != null)
+                {
+                    MethodInfo methodInfo = type.GetMethod(a_functionName, new Type[] { typeof(Canvas), typeof(Element) });
+
+                    if (methodInfo != null)
+                    {
+                        return methodInfo.CreateDelegate(typeof(Element.Interaction)) as Element.Interaction;
+                    }
+                }
+            }
+
+            return null;
         }
 
         void PopulateElements (XmlNode a_node, Element a_parent)
@@ -206,7 +229,11 @@ namespace Erde.Graphics.GUI
 
                             if (vals.Length > 1)
                             {
-                                element.Hover = Reflection.GetMainAssemblyFunction<Element.Interaction>(vals[0], vals[1]);
+                                Element.Interaction dele = GetAssemblyFunction(vals[0].TrimEnd(), vals[1].TrimEnd());
+                                if (dele != null)
+                                {
+                                    element.Hover += dele;
+                                }
                             }
 
                             break;
@@ -217,7 +244,11 @@ namespace Erde.Graphics.GUI
 
                             if (vals.Length > 1)
                             {
-                                element.Normal += Reflection.GetMainAssemblyFunction<Element.Interaction>(vals[0], vals[1]);
+                                Element.Interaction dele = GetAssemblyFunction(vals[0].TrimEnd(), vals[1].TrimEnd());
+                                if (dele != null)
+                                {
+                                    element.Normal += dele;
+                                }
                             }
 
                             break;
@@ -228,7 +259,11 @@ namespace Erde.Graphics.GUI
 
                             if (vals.Length > 1)
                             {
-                                element.Click += Reflection.GetMainAssemblyFunction<Element.Interaction>(vals[0], vals[1]);
+                                Element.Interaction dele = GetAssemblyFunction(vals[0].TrimEnd(), vals[1].TrimEnd());
+                                if (dele != null)
+                                {
+                                    element.Click += dele;
+                                }
                             }
 
                             break;
@@ -239,7 +274,11 @@ namespace Erde.Graphics.GUI
 
                             if (vals.Length > 1)
                             {
-                                element.Release += Reflection.GetMainAssemblyFunction<Element.Interaction>(vals[0], vals[1]);
+                                Element.Interaction dele = GetAssemblyFunction(vals[0].TrimEnd(), vals[1].TrimEnd());
+                                if (dele != null)
+                                {
+                                    element.Release += dele;
+                                }
                             }
 
                             break;
@@ -343,6 +382,14 @@ namespace Erde.Graphics.GUI
 
                     return canv;
                 }
+                else
+                {
+                    InternalConsole.Error("Cannot access canvas file");
+                }
+            }
+            else
+            {
+                InternalConsole.Error("No filesystem to load from for canvas");
             }
 
             return null;
