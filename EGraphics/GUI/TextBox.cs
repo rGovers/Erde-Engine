@@ -1,8 +1,8 @@
 using Erde.Graphics.Variables;
+using Erde.IO;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
-using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
@@ -160,7 +160,7 @@ namespace Erde.Graphics.GUI
             return new Font(SystemFonts.DefaultFont.FontFamily, a_fontSize);
         }
 
-        internal static TextBox Create (XmlNode a_node, Pipeline a_pipeline)
+        internal static TextBox Create (XmlNode a_node, IFileSystem a_fileSystem, Pipeline a_pipeline)
         {
             string text;
             string fontFamily;
@@ -237,7 +237,9 @@ namespace Erde.Graphics.GUI
 
         void Dispose (bool a_state)
         {
-            Debug.Assert(a_state, string.Format("[Warning] Resource leaked {0}", GetType().ToString()));
+#if DEBUG_INFO
+            Tools.VerifyObjectMemoryState(this, a_state);
+#endif
 
             m_texture.Dispose();
         }

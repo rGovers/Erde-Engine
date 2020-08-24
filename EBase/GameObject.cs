@@ -32,7 +32,9 @@ namespace Erde
 
         void Dispose (bool a_state)
         {
-            Tools.Verify(this, a_state);
+#if DEBUG_INFO
+            Tools.VerifyObjectMemoryState(this, a_state);
+#endif
 
             m_gameObjects.Remove(this);
 

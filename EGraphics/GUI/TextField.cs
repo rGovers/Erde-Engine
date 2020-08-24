@@ -1,4 +1,5 @@
 ﻿using Erde.Application;
+using Erde.IO;
 using OpenTK;
 using OpenTK.Input;
 using System;
@@ -67,7 +68,7 @@ namespace Erde.Graphics.GUI
             }
         }
 
-        internal new static TextField Create (XmlNode a_node, Pipeline a_pipeline)
+        internal new static TextField Create (XmlNode a_node, IFileSystem a_fileSystem, Pipeline a_pipeline)
         {
             string text;
             string fontFamily;
@@ -115,7 +116,9 @@ namespace Erde.Graphics.GUI
 
         void Dispose (bool a_state)
         {
-            Tools.Verify(this, a_state);
+#if DEBUG_INFO
+            Tools.VerifyObjectMemoryState(this, a_state);
+#endif
 
             m_pipeline.Window.KeyPress -= Window_KeyPress;
         }

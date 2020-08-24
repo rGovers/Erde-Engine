@@ -37,9 +37,11 @@ namespace Erde.Graphics.Shader
         }
         // public PixelShader (string a_filename, AssetManager a_assetManager, Pipeline a_pipeline) : this(Program.LoadSource(a_filename, a_assetManager), a_pipeline) { }
 
-        private void Dispose (bool a_state)
+        void Dispose (bool a_state)
         {
-            Tools.Verify(this, a_state);
+#if DEBUG_INFO
+            Tools.VerifyObjectMemoryState(this, a_state);
+#endif
 
             m_pipeline.InputQueue.Enqueue(this);
         }

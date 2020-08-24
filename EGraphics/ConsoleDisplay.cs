@@ -81,7 +81,7 @@ namespace Erde.Graphics
                 }
                 }
 
-                textBox = new TextBox(brush, SystemFonts.DefaultFont, 400, 20, m_pipeline)
+                textBox = new TextBox(brush, SystemFonts.DefaultFont, 400, 24, m_pipeline)
                 {
                     Text = message.Text
                 };

@@ -217,7 +217,22 @@ namespace Erde.Graphics.GUI
             {
                 if (m_parent != value)
                 {
+                    if (m_parent != null)
+                    {
+                        Element[] children = m_parent.Children.ToArray();
+                        m_parent.m_children = new ConcurrentBag<Element>();
+
+                        foreach (Element element in children)
+                        {
+                            if (element != this)
+                            {
+                                m_parent.m_children.Add(element);
+                            }
+                        }
+                    }
+
                     m_parent = value;
+
                     if (m_parent != null)
                     {
                         m_parent.Children.Add(this);

@@ -202,7 +202,9 @@ namespace Erde.Graphics.Rendering
 
         void Dispose (bool a_state)
         {
-            Tools.Verify(this, a_state);
+#if DEBUG_INFO
+            Tools.VerifyObjectMemoryState(this, a_state);
+#endif
 
             // Queue the destruction of the material in rendering pipeline
             m_graphics.DisposalQueue.Enqueue(this);

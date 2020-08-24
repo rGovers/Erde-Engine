@@ -208,7 +208,9 @@ namespace Erde.Graphics.Variables
 
         void Dispose (bool a_state)
         {
-            Tools.Verify(this, a_state);
+#if DEBUG_INFO
+            Tools.VerifyObjectMemoryState(this, a_state);
+#endif
 
             m_pipeline.DisposalQueue.Enqueue(this);
         }

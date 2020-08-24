@@ -6,7 +6,6 @@ using OpenTK.Input;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Xml;
@@ -15,6 +14,8 @@ namespace Erde.Graphics.GUI
 {
     public class Canvas : IGLObject
     {
+        string                      m_name;
+
         Vector2                     m_resolution;
 
         ConcurrentBag<Element>      m_elements;
@@ -34,6 +35,18 @@ namespace Erde.Graphics.GUI
         bool                        m_paintedCanvas;
 
         IFileSystem                 m_fileSystem;
+
+        public string Name
+        {
+            get
+            {
+                return m_name;
+            }
+            set
+            {
+                m_name = value;
+            }
+        }
 
         public Vector2 Resolution
         {
@@ -82,6 +95,8 @@ namespace Erde.Graphics.GUI
 
         internal Canvas (Vector2 a_resolution, Pipeline a_pipeline)
         {
+            m_name = string.Empty;
+
             m_resolution = a_resolution;
             m_pipeline = a_pipeline;
 
@@ -118,29 +133,23 @@ namespace Erde.Graphics.GUI
 
         void PopulateElements (XmlNode a_node, Element a_parent)
         {
-            Element element = null;
+            Type type = Type.GetType(a_node.Name);
 
-            switch (a_node.Name.ToLower())
+            if (type == null)
             {
-            case "image":
-                {
-                    element = Image.Create(a_node, m_fileSystem, m_pipeline);
+                type = Type.GetType("Erde.Graphics.GUI." + a_node.Name);
 
-                    break;
-                }
-            case "textbox":
+                if (type == null)
                 {
-                    element = TextBox.Create(a_node, m_pipeline);
+                    InternalConsole.Error("Canvas: Invalid Element Type: " + a_node.Name);
 
-                    break;
-                }
-            case "textfield":
-                {
-                    element = TextField.Create(a_node, m_pipeline);
-
-                    break;
+                    return;
                 }
             }
+
+            MethodInfo methodInfo = type.GetMethod("Create", BindingFlags.Static | BindingFlags.NonPublic);
+
+            Element element = methodInfo.Invoke(null, new object[] { a_node, m_fileSystem, m_pipeline }) as Element;
 
             if (element != null)
             {
@@ -150,6 +159,12 @@ namespace Erde.Graphics.GUI
                 {
                     switch (att.Name.ToLower())
                     {
+                    case "visible":
+                    {
+                        element.Visible = bool.Parse(att.Value); 
+
+                        break;
+                    }
                     case "width":
                         {
                             Vector2 size = element.Size;
@@ -325,18 +340,24 @@ namespace Erde.Graphics.GUI
                     {
                         switch (att.Name.ToLower())
                         {
+                        case "name":
+                        {
+                            canvas.m_name = att.Value;
+
+                            break;
+                        }
                         case "xres":
-                            {
-                                canvas.m_resolution.X = float.Parse(att.Value);
+                        {
+                            canvas.m_resolution.X = float.Parse(att.Value);
 
-                                break;
-                            }
+                            break;
+                        }
                         case "yres":
-                            {
-                                canvas.m_resolution.Y = float.Parse(att.Value);
+                        {
+                            canvas.m_resolution.Y = float.Parse(att.Value);
 
-                                break;
-                            }
+                            break;
+                        }
                         }
                     }
 
@@ -421,7 +442,7 @@ namespace Erde.Graphics.GUI
 
                 foreach (Element element in m_elements)
                 {
-                    if (element != m_rootElement)
+                    if (element != m_rootElement && element.Visible)
                     {
                         Vector2 pos = (element.TruePosition + a_resolution) / 2;
                         Vector2 size = element.TrueSize;
@@ -567,6 +588,33 @@ namespace Erde.Graphics.GUI
 
             return null;
         }
+        public void RemoveElement (string a_name)
+        {
+            if (m_namedElements.ContainsKey(a_name))
+            {
+                Element removalElement = m_namedElements[a_name];
+                removalElement.Parent = null;
+
+                Element[] elements = m_elements.ToArray();
+
+                m_elements = new ConcurrentBag<Element>();
+                foreach (Element element in elements)
+                {
+                    if (removalElement != element)
+                    {
+                        m_elements.Add(element);
+                    }
+                }
+
+                m_namedElements.Remove(a_name);
+
+                IDisposable disposable = removalElement as IDisposable;
+                if (disposable != null)
+                {
+                    disposable.Dispose();
+                }
+            }
+        }
 
         public void PopStack ()
         {
@@ -588,7 +636,9 @@ namespace Erde.Graphics.GUI
 
         void Dispose (bool a_state)
         {
-            Debug.Assert(a_state, string.Format("[Warning] Resource leaked {0}", GetType().ToString()));
+#if DEBUG_INFO
+            Tools.VerifyObjectMemoryState(this, a_state);
+#endif
 
             PopStack();
 
