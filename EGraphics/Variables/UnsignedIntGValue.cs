@@ -3,10 +3,8 @@ using OpenTK.Graphics.OpenGL;
 
 namespace Erde.Graphics.Variables
 {
-    public class UnsignedInt : IMaterialBindable
+    public class UnsignedIntGValue : IMaterialBindable
     {
-        Pipeline m_pipeline;
-
         uint     m_value;
 
         public uint Value

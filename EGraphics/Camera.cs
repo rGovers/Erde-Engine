@@ -3,7 +3,6 @@ using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.Threading;
 
@@ -35,6 +34,8 @@ namespace Erde.Graphics
         float                     m_far;
 
         RenderTexture             m_renderTexture;
+
+        Color                     m_clearColor;
 
         public static List<Camera> CameraList
         {
@@ -152,6 +153,18 @@ namespace Erde.Graphics
             }
         }
 
+        public Color ClearColor
+        {
+            get
+            {
+                return m_clearColor;
+            }
+            set
+            {
+                m_clearColor = value;
+            }
+        }
+
         public void SetProjectionViewport (float a_fov, int a_width, int a_height, float a_near, float a_far)
         {
             m_fov = a_fov;
@@ -175,6 +188,8 @@ namespace Erde.Graphics
 
             m_renderTexture = a_renderTexture;
             m_post = a_post;
+
+            m_clearColor = Color.Gray;
 
             if (Cameras == null)
             {
@@ -207,10 +222,12 @@ namespace Erde.Graphics
             return worldPos.Xyz - Transform.Forward * a_screenPos.Z * Far;
         }
 
-        private void Dispose (bool a_state)
+        void Dispose (bool a_state)
         {
-            Debug.Assert(a_state, string.Format("[Warning] Resource leaked {0}", GetType().ToString()));
-
+#if DEBUG_INFO
+            Tools.VerifyObjectMemoryState(this, a_state);
+#endif
+            
             base.Dispose();
 
             CameraMutex.WaitOne();

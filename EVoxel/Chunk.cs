@@ -287,14 +287,12 @@ namespace Erde.Voxel
 
             for (int x = 0; x < m_distanceField.Width - 1; ++x)
             {
+                int x1 = x + 1;
                 for (int y = 0; y < m_distanceField.Height - 1; ++y)
                 {
+                    int y1 = y + 1;
                     for (int z = 0; z < m_distanceField.Depth - 1; ++z)
                     {
-                        // Retrieve the corner points of a voxel
-                        // Much faster then using functions
-                        int x1 = x + 1;
-                        int y1 = y + 1;
                         int z1 = z + 1;
 
                         voxels[0] = cells[(z * width * height) + (y * width) + x];

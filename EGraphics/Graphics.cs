@@ -463,9 +463,9 @@ namespace Erde.Graphics
                     {
                         foreach (DrawingContainer.RenderingContainer rend in draw.Renderers)
                         {
-                            if (rend.Renderer.Visible)
+                            Renderer renderer = rend.Renderer;
+                            if (renderer.Visible)
                             {
-                                Renderer renderer = rend.Renderer;
                                 Transform transform = renderer.Transform;
 
                                 // Threading safety
@@ -551,39 +551,32 @@ namespace Erde.Graphics
                         {
                             if (rend.Renderer.Transform != null)
                             {
-                                try
+                                lock (rend.Renderer.Transform)
                                 {
-                                    lock (rend.Renderer.Transform)
+                                    Vector3 translation = rend.Renderer.Transform.Translation;
+
+                                    if (Vector3.Dot(translation - a_cameraPosition, a_cameraForward) - rend.Renderer.Radius >= 0.0f)
                                     {
-                                        Vector3 translation = rend.Renderer.Transform.Translation;
-
-                                        if (Vector3.Dot(translation - a_cameraPosition, a_cameraForward) - rend.Renderer.Radius >= 0.0f)
-                                        {
-                                            continue;
-                                        }
-
-                                        if (!a_cameraFrutrum.CompareSphere(translation, rend.Renderer.Radius))
-                                        {
-                                            continue;
-                                        }
-
-                                        if (!rend.Renderer.Transform.Static)
-                                        {
-                                            BindTransform(rend.Renderer.Transform.ToMatrix(), rend.Renderer.Transform.RotationMatrix);
-                                        }
-                                        else
-                                        {
-                                            int ubo = rend.TransformBuffer;
-
-                                            BindTransform(rend.Renderer.Transform, ref ubo);
-
-                                            rend.TransformBuffer = ubo;
-                                        }
+                                        continue;
                                     }
-                                }
-                                catch (NullReferenceException)
-                                {
-                                    InternalConsole.AddMessage("Graphics Transform: Unable to acquire lock", InternalConsole.e_Alert.Warning);
+
+                                    if (!a_cameraFrutrum.CompareSphere(translation, rend.Renderer.Radius))
+                                    {
+                                        continue;
+                                    }
+
+                                    if (!rend.Renderer.Transform.Static)
+                                    {
+                                        BindTransform(rend.Renderer.Transform.ToMatrix(), rend.Renderer.Transform.RotationMatrix);
+                                    }
+                                    else
+                                    {
+                                        int ubo = rend.TransformBuffer;
+
+                                        BindTransform(rend.Renderer.Transform, ref ubo);
+
+                                        rend.TransformBuffer = ubo;
+                                    }
                                 }
                             }
                         }
@@ -606,7 +599,9 @@ namespace Erde.Graphics
 
             GLCommand.BindTexture(m_defferedShader, "diffuse", m_renderTarget.RenderTextures[0]);
 
+#if DEBUG_INFO
             Pipeline.GLError("Graphics: Merge Binding: ");
+#endif
 
             GL.DrawArrays(PrimitiveType.TriangleStrip, 0, 4);
 
@@ -730,6 +725,7 @@ namespace Erde.Graphics
                         GL.BindFramebuffer(FramebufferTarget.FramebufferExt, m_renderTarget.BufferHandle);
                         GL.DrawBuffers(m_drawBuffers.Length, m_drawBuffers);
 
+                        GL.ClearColor(cam.ClearColor);
                         GL.Clear(cam.ClearFlags);
 
                         camPos = cam.Transform.Translation;

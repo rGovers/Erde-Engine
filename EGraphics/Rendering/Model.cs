@@ -3,7 +3,6 @@ using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -12,12 +11,81 @@ namespace Erde.Graphics.Rendering
 {
     public enum e_PrimitiveType
     {
-        Null,
         Cube
     }
 
     public class Model : IGLObject
     {
+        class PrimitiveModelGenerator : IGLObject
+        {
+            Model           m_model;
+            e_PrimitiveType m_primitiveType;
+
+            public PrimitiveModelGenerator (e_PrimitiveType a_primitiveType, Model a_model)
+            {
+                m_primitiveType = a_primitiveType;
+                m_model = a_model;
+            }
+
+            public void Dispose ()
+            {
+
+            }
+
+            public void DisposeObject ()
+            {
+
+            }
+
+            public void ModifyObject ()
+            {
+                switch (m_primitiveType)
+                {
+                case e_PrimitiveType.Cube:
+                {
+                    m_model.GenerateCube();
+
+                    break;
+                }
+                }
+            }
+        }
+        class ModelLoader : IGLObject
+        {
+            IFileSystem m_fileSystem;
+            Model       m_model;
+            string      m_fileName;
+
+            public ModelLoader (string a_fileName, IFileSystem a_fileSystem, Model a_model)
+            {
+                m_fileSystem = a_fileSystem;
+                m_fileName = a_fileName;
+                m_model = a_model;
+            }
+
+            public void Dispose ()
+            {
+            }
+
+            public void DisposeObject ()
+            {
+            }
+
+            public void ModifyObject ()
+            {
+                if (m_fileSystem != null)
+                {
+                    byte[] bytes;
+                    if (m_fileSystem.Load(m_fileName, out bytes))
+                    {
+                        string[] lines = Encoding.UTF8.GetString(bytes).Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+
+                        m_model.LoadModel(lines);
+                    }
+                }
+            }
+        }
+
         public struct Vertex
         {
             public Vector4 position;
@@ -39,10 +107,6 @@ namespace Erde.Graphics.Rendering
         ushort          m_indicies;
 
         float           m_radius;
-        e_PrimitiveType m_primitive;
-
-        string          m_fileName;
-        IFileSystem     m_fileSystem;
 
         Pipeline        m_pipeline;
 
@@ -84,11 +148,6 @@ namespace Erde.Graphics.Rendering
             {
                 return m_VAO;
             }
-        }
-
-        Model ()
-        {
-            m_primitive = e_PrimitiveType.Null;
         }
 
         void Dispose (bool a_state)
@@ -319,11 +378,9 @@ namespace Erde.Graphics.Rendering
         public static Model CreatePrimitive (e_PrimitiveType a_primitive, Pipeline a_pipeline)
         {
             Model model = new Model();
-            model.m_primitive = a_primitive;
-            model.m_fileName = string.Empty;
             model.m_pipeline = a_pipeline;
 
-            a_pipeline.InputQueue.Enqueue(model);
+            a_pipeline.InputQueue.Enqueue(new PrimitiveModelGenerator(a_primitive, model));
 
             return model;
         }
@@ -331,49 +388,16 @@ namespace Erde.Graphics.Rendering
         public static Model LoadModel (string a_fileName, IFileSystem a_fileSystem, Pipeline a_pipeline)
         {
             Model model = new Model();
-            model.m_primitive = e_PrimitiveType.Null;
-            model.m_fileName = a_fileName;
-            model.m_fileSystem = a_fileSystem;
             model.m_pipeline = a_pipeline;
 
-            a_pipeline.InputQueue.Enqueue(model);
+            a_pipeline.InputQueue.Enqueue(new ModelLoader(a_fileName, a_fileSystem, model));
 
             return model;
         }
 
         public void ModifyObject ()
         {
-            switch (m_primitive)
-            {
-            case e_PrimitiveType.Null:
-                {
-                    // LoadModel();
-                    if (m_fileSystem != null)
-                    {
-                        byte[] bytes;
-                        if (m_fileSystem.Load(m_fileName, out bytes))
-                        {
-                            string[] lines = Encoding.UTF8.GetString(bytes).Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
-
-                            LoadModel(lines);
-                        }
-                    }
-
-                    break;
-                }
-            case e_PrimitiveType.Cube:
-                {
-                    GenerateCube();
-
-                    break;
-                }
-            default:
-                {
-                    InternalConsole.AddMessage("Model: Invalid Primitive Type", InternalConsole.e_Alert.Error);
-
-                    break;
-                }
-            }
+            
         }
 
         public void DisposeObject ()

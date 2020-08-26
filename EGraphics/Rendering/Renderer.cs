@@ -36,7 +36,7 @@ namespace Erde.Graphics.Rendering
         {
             get
             {
-                return m_visible && Indicies != 0;
+                return m_visible && Indicies > 0;
             }
             set
             {

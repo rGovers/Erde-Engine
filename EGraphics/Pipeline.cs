@@ -335,7 +335,9 @@ namespace Erde.Graphics
         {
             if (m_gui != null && m_window != null)
             {
-                foreach (Canvas canvas in m_gui)
+                Canvas[] canvasList = m_gui.ToArray();
+
+                foreach (Canvas canvas in canvasList)
                 {
                     if (canvas != null)
                     {

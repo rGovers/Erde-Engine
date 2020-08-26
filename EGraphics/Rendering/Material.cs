@@ -2,7 +2,6 @@
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 
 namespace Erde.Graphics.Rendering
@@ -70,14 +69,18 @@ namespace Erde.Graphics.Rendering
                 {
                     m_bindingIndex = GL.GetUniformBlockIndex(m_program, m_binding);
 
+#if DEBUG_INFO
                     Pipeline.GLError("Material: Binding: ");
+ #endif
 
                     return;
                 }
 
                 m_bindingIndex = GL.GetUniformLocation(m_program, m_binding);
 
+#if DEBUG_INFO
                 Pipeline.GLError("Material: Binding: ");
+#endif
             }
 
             public void DisposeObject ()

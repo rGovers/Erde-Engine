@@ -5,7 +5,6 @@ using OpenTK;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 
 namespace Erde.Voxel
@@ -280,7 +279,7 @@ namespace Erde.Voxel
 
             string filename = "obj/" + GetFileName(chunk);
 
-            if (m_fileSystem.Exists(filename))
+            if (m_fileSystem != null && m_fileSystem.Exists(filename))
             {
                 if (!m_fileSystem.Load(filename, out bytes))
                 {
@@ -740,7 +739,9 @@ namespace Erde.Voxel
 
         void Dispose (bool a_state)
         {
-            Debug.Assert(a_state, string.Format("[Warning] Resource leaked {0}", GetType().ToString()));
+#if DEBUG_INFO
+            Tools.VerifyObjectMemoryState(this, a_state);
+#endif
 
             m_shutDown = true;
 
@@ -748,8 +749,7 @@ namespace Erde.Voxel
             {
                 while (!m_join)
                 {
-                    // For some reason fixes lockups in .NET runtime
-                    Console.Write("");
+                    Thread.Yield();
                 }
 
                 if (m_voxelThread != null)

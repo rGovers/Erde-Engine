@@ -36,11 +36,11 @@ namespace Erde.Graphics.GUI
                 switch (att.Name.ToLower())
                 {
                 case "path":
-                    {
-                        image.Texture = new Texture(att.Value, a_fileSystem, a_pipeline);
+                {
+                    image.Texture = Texture.FromFile(att.Value, a_fileSystem, a_pipeline);
 
-                        break;
-                    }
+                    break;
+                }
                 }
             }
 
