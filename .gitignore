@@ -1,6 +1,7 @@
 .project
 .vs/
 .vscode/
+bin/
 
 *.zip
 *.rar

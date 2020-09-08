@@ -17,27 +17,32 @@
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>..\bin\</OutputPath>
     <DefineConstants>TRACE;DEBUG;DEBUG_INFO</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x64</PlatformTarget>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>..\bin\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x64</PlatformTarget>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release With Debug|AnyCPU'">
-    <OutputPath>bin\Release With Debug\</OutputPath>
+    <OutputPath>..\bin\</OutputPath>
     <DefineConstants>TRACE;DEBUG_INFO</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x64</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="OpenTK, Version=3.2.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
@@ -46,16 +51,28 @@
     <Reference Include="System" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Colliders\Collider.cs" />
-    <Compile Include="Colliders\DistanceField.cs" />
-    <Compile Include="Engine.cs" />
-    <Compile Include="PhysicsTime.cs" />
-    <Compile Include="ISolver.cs" />
-    <Compile Include="PhysicsObject.cs" />
+    <Compile Include="Broadphase\BroadphaseInterface.cs" />
+    <Compile Include="Collider\CapsuleCollider.cs" />
+    <Compile Include="Collider\DistanceFieldCollider.cs" />
+    <Compile Include="Collider\SphereCollider.cs" />
+    <Compile Include="Configuration\CollisionConfiguration.cs" />
+    <Compile Include="CollisionDispatcher.cs" />
+    <Compile Include="CollisionObject.cs" />
+    <Compile Include="Collider\BoxCollider.cs" />
+    <Compile Include="Collider\Collider.cs" />
+    <Compile Include="Configuration\DefaultCollisionConfiguration.cs" />
+    <Compile Include="Broadphase\DbvtBroadphase.cs" />
+    <Compile Include="Configuration\ErdeCollisionConfiguration.cs" />
+    <Compile Include="DiscreteDynamicsWorld.cs" />
+    <Compile Include="IPObject.cs" />
+    <Compile Include="RaycastResult.cs" />
+    <Compile Include="Solver\ConstraintSolver.cs" />
+    <Compile Include="Solver\SequentialmpulseConstraintSolver.cs" />
+    <Compile Include="PhysicsEngine.cs" />
+    <Compile Include="MotionState.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Rigidbody.cs" />
-    <Compile Include="Solver.cs" />
-    <Compile Include="Colliders\Sphere.cs" />
+    <Compile Include="PhysicsTime.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EBase\EBase.csproj">
@@ -63,9 +80,13 @@
       <Name>EBase</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="OpenTK.dll.config" />
-    <None Include="packages.config" />
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
 </Project>

@@ -124,6 +124,8 @@ namespace Erde.Graphics
         public Pipeline (INativeWindow a_window)
         {
             m_shutDown = false;
+            m_joinable = false;
+            m_destroy = false;
 
             m_window = a_window;
 
@@ -167,8 +169,6 @@ namespace Erde.Graphics
 
             m_time = new PipelineTime();
 
-            m_joinable = false;
-
             m_gui = new List<Canvas>();
 
             Shaders.InitShaders(this);
@@ -180,30 +180,29 @@ namespace Erde.Graphics
 
         public void ShutDown ()
         {
-            while (m_access) ;
+            while (m_access)
+            {
+                Thread.Yield();
+            }
 
+            m_destroy = true;
             m_shutDown = true;
         }
 
         public void Dispose ()
         {
-            m_destroy = true;
-
             Shaders.DestroyShaders();
 
             while (!m_joinable)
             {
-                Console.Write("");
+                Thread.Yield();
             };
-
             m_thread.Join();
         }
 
         void Run ()
         {
             StartUp();
-
-            m_destroy = false;
 
             while (!m_shutDown)
             {
@@ -313,7 +312,7 @@ namespace Erde.Graphics
             m_access = true;
             if (m_graphics != null)
             {
-                if (PipelineTime.FPS <= 50.0f)
+                if (PipelineTime.FPS <= 55.0f)
                 {
                     m_graphics.SwapInterval = 0;
                 }

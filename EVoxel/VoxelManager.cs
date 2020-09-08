@@ -486,6 +486,8 @@ namespace Erde.Voxel
 
         void RemoveObject (Chunk a_chunk)
         {
+            m_worldGenerator.DestroyChunk(a_chunk);
+
             Vector3 key = (a_chunk.Transform.Translation / VoxelObjectSize);
 
             a_chunk.Transform.Translation = Vector3.One * float.PositiveInfinity;
@@ -599,11 +601,6 @@ namespace Erde.Voxel
                 ++trig;
             }
 
-            if (trig == 0)
-            {
-                Thread.Sleep(100);
-            }
-
             int count = m_updateThreads.Count;
 
             for (int i = 0; i < count; ++i)
@@ -614,10 +611,12 @@ namespace Erde.Voxel
                 {
                     m_updateThreads.RemoveAt(i);
                     --count;
+
+                    break;
                 }
             }
 
-            if (count < m_maxThreads && count * 3 < m_updateChunk.Count)
+            if (count < m_maxThreads && count * 3 <= m_updateChunk.Count)
             {
                 Thread thread = new Thread(UpdateChunks)
                 {

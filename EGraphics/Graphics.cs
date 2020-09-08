@@ -318,7 +318,7 @@ namespace Erde.Graphics
             }
         }
 
-        Frustrum SetCameraBuffer (Camera a_camera)
+        Frustum SetCameraBuffer (Camera a_camera)
         {
             CameraContainer camContainer = new CameraContainer
             {
@@ -335,7 +335,7 @@ namespace Erde.Graphics
             m_cameraBuffer.UpdateBuffer();
 
             // returns the cameras frustrum
-            return new Frustrum(viewProjection);
+            return new Frustum(viewProjection);
         }
 
         void BindCamera ()
@@ -440,7 +440,7 @@ namespace Erde.Graphics
 
         void ShadowPass ()
         {
-            Frustrum frustrum;
+            Frustum frustrum;
 
             foreach (Light light in Light.LightList)
             {
@@ -454,7 +454,7 @@ namespace Erde.Graphics
                     GL.Clear(ClearBufferMask.DepthBufferBit);
 
                     // Sets the frustrum to the light
-                    frustrum = new Frustrum(light.View * light.Projection);
+                    frustrum = new Frustum(light.View * light.Projection);
 
                     // Gets the transform location in the shader
                     int transformLoc = GL.GetUniformLocation(light.ShadowProgram.Handle, "world");
@@ -467,25 +467,28 @@ namespace Erde.Graphics
                             if (renderer.Visible)
                             {
                                 Transform transform = renderer.Transform;
-
-                                // Threading safety
-                                if (transform != null)
+                                lock (transform)
                                 {
-                                    lock (transform)
+                                    if (transform != null)
                                     {
-                                        // Checks if the object is within the lights frustrum
-                                        if (frustrum.CompareSphere(transform.Translation, renderer.Radius))
-                                        {
-                                            // Binds the objects transform to the shader
-                                            Matrix4 transformMat = transform.ToMatrix();
-                                            GL.UniformMatrix4(transformLoc, false, ref transformMat);
+                                        Vector3 translation = transform.Translation;
+                                        float radius = renderer.Radius;
 
-                                            // Draws the object
-                                            renderer.DrawShadow(light);
-#if DEBUG_INFO
-                                            ++m_drawCalls;
-#endif
+                                        // Checks if the object is within the lights frustrum
+                                        if (!frustrum.CompareSphere(translation, radius))
+                                        {
+                                            continue;
                                         }
+
+                                        // Binds the objects transform to the shader
+                                        Matrix4 transformMat = transform.ToMatrix();
+                                        GL.UniformMatrix4(transformLoc, false, ref transformMat);
+
+                                        // Draws the object
+                                        renderer.DrawShadow(light);
+#if DEBUG_INFO
+                                        ++m_drawCalls;
+#endif
                                     }
                                 }
                             }
@@ -523,7 +526,7 @@ namespace Erde.Graphics
 #endif
         }
 
-        void DeferredPass (Vector3 a_cameraPosition, Vector3 a_cameraForward, Frustrum a_cameraFrutrum, Camera a_camera)
+        void DeferredPass (Vector3 a_cameraPosition, Vector3 a_cameraForward, Frustum a_cameraFrutrum, Camera a_camera)
         {
             foreach (DrawingContainer draw in m_drawingObjects)
             {
@@ -545,35 +548,38 @@ namespace Erde.Graphics
 
                 foreach (DrawingContainer.RenderingContainer rend in draw.Renderers)
                 {
-                    if (rend.Renderer.Visible)
+                    Renderer renderer = rend.Renderer;
+
+                    if (renderer.Visible)
                     {
-                        if (rend.Renderer.Material.TransformBinding != -1)
+                        if (renderer.Material.TransformBinding != -1)
                         {
-                            if (rend.Renderer.Transform != null)
+                            Transform transform = renderer.Transform;
+                            lock (transform)
                             {
-                                lock (rend.Renderer.Transform)
+                                if (transform != null)
                                 {
-                                    Vector3 translation = rend.Renderer.Transform.Translation;
+                                    Vector3 translation = transform.Translation;
 
-                                    if (Vector3.Dot(translation - a_cameraPosition, a_cameraForward) - rend.Renderer.Radius >= 0.0f)
+                                    if (Vector3.Dot(translation - a_cameraPosition, a_cameraForward) - renderer.Radius >= 0.0f)
                                     {
                                         continue;
                                     }
 
-                                    if (!a_cameraFrutrum.CompareSphere(translation, rend.Renderer.Radius))
+                                    if (!a_cameraFrutrum.CompareSphere(translation, renderer.Radius))
                                     {
                                         continue;
                                     }
 
-                                    if (!rend.Renderer.Transform.Static)
+                                    if (!transform.Static)
                                     {
-                                        BindTransform(rend.Renderer.Transform.ToMatrix(), rend.Renderer.Transform.RotationMatrix);
+                                        BindTransform(transform.ToMatrix(), transform.RotationMatrix);
                                     }
                                     else
                                     {
                                         int ubo = rend.TransformBuffer;
 
-                                        BindTransform(rend.Renderer.Transform, ref ubo);
+                                        BindTransform(transform, ref ubo);
 
                                         rend.TransformBuffer = ubo;
                                     }
@@ -581,7 +587,7 @@ namespace Erde.Graphics
                             }
                         }
 
-                        rend.Renderer.Draw(a_camera);
+                        renderer.Draw(a_camera);
 
 #if DEBUG_INFO
                         ++m_drawCalls;
@@ -697,7 +703,7 @@ namespace Erde.Graphics
             Vector3 camPos = Vector3.Zero;
             Vector3 camForward = Vector3.Zero;
 
-            Frustrum frustrum = null;
+            Frustum frustrum = null;
 
             TimeContainer timeContainer = new TimeContainer()
             {
@@ -720,51 +726,59 @@ namespace Erde.Graphics
                 {
                     foreach (Camera cam in cameraList)
                     {
-                        GL.Viewport(0, 0, m_renderTarget.Width, m_renderTarget.Height);
-
-                        GL.BindFramebuffer(FramebufferTarget.FramebufferExt, m_renderTarget.BufferHandle);
-                        GL.DrawBuffers(m_drawBuffers.Length, m_drawBuffers);
-
-                        GL.ClearColor(cam.ClearColor);
-                        GL.Clear(cam.ClearFlags);
-
-                        camPos = cam.Transform.Translation;
-                        camForward = cam.Transform.Forward;
-
-                        frustrum = SetCameraBuffer(cam);
-
-                        if (cam.DrawSkybox)
+                        lock (cam)
                         {
-                            SkyBoxPass();
-                        }
+                            if (cam != null)
+                            {
+                                Transform transform = cam.Transform;
 
-                        DeferredPass(camPos, camForward, frustrum, cam);
+                                GL.Viewport(0, 0, m_renderTarget.Width, m_renderTarget.Height);
 
-                        GL.Viewport(cam.Viewport);
+                                GL.BindFramebuffer(FramebufferTarget.FramebufferExt, m_renderTarget.BufferHandle);
+                                GL.DrawBuffers(m_drawBuffers.Length, m_drawBuffers);
 
-                        RenderTexture renderTexture = cam.RenderTexture;
+                                GL.ClearColor(cam.ClearColor);
+                                GL.Clear(cam.ClearFlags);
 
-                        if (renderTexture != null)
-                        {
-                            GL.BindFramebuffer(FramebufferTarget.FramebufferExt, renderTexture.RenderBuffer);
-                        }
-                        else
-                        {
-                            GL.BindFramebuffer(FramebufferTarget.FramebufferExt, 0);
-                        }
+                                camPos = transform.Translation;
+                                camForward = transform.Forward;
 
-                        GL.Clear(ClearBufferMask.DepthBufferBit);
+                                frustrum = SetCameraBuffer(cam);
 
-                        MergePass();
+                                if (cam.DrawSkybox)
+                                {
+                                    SkyBoxPass();
+                                }
 
-                        if (Light.LightList != null)
-                        {
-                            LightingPass();
-                        }
+                                DeferredPass(camPos, camForward, frustrum, cam);
 
-                        if (cam.PostProcessing != null)
-                        {
-                            cam.PostProcessing.Effect(renderTexture, cam, m_renderTarget.RenderTextures[1], m_renderTarget.RenderTextures[2], m_renderTarget.DepthBuffer);
+                                GL.Viewport(cam.Viewport);
+
+                                RenderTexture renderTexture = cam.RenderTexture;
+
+                                if (renderTexture != null)
+                                {
+                                    GL.BindFramebuffer(FramebufferTarget.FramebufferExt, renderTexture.RenderBuffer);
+                                }
+                                else
+                                {
+                                    GL.BindFramebuffer(FramebufferTarget.FramebufferExt, 0);
+                                }
+
+                                GL.Clear(ClearBufferMask.DepthBufferBit);
+
+                                MergePass();
+
+                                if (Light.LightList != null)
+                                {
+                                    LightingPass();
+                                }
+
+                                if (cam.PostProcessing != null)
+                                {
+                                    cam.PostProcessing.Effect(renderTexture, cam, m_renderTarget.RenderTextures[1], m_renderTarget.RenderTextures[2], m_renderTarget.DepthBuffer);
+                                }
+                            }    
                         }
                     }
                 }

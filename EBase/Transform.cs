@@ -61,6 +61,8 @@ namespace Erde
             set
             {
                 m_translation = value;
+
+                m_static |= 0b1 << 2;
             }
         }
 
@@ -73,6 +75,8 @@ namespace Erde
             set
             {
                 m_rotation = value;
+
+                m_static |= 0b1 << 2;
             }
         }
         public Vector4 AxisAngle

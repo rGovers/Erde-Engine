@@ -21,6 +21,7 @@ namespace Erde.Voxel
 
     public class Chunk : Renderer, IGLObject
     {
+        [Serializable, StructLayout(LayoutKind.Sequential)]
         public struct Voxel
         {
             uint m_color;

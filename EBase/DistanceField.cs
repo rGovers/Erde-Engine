@@ -3,18 +3,16 @@ using System.Runtime.InteropServices;
 
 namespace Erde
 {
-    public interface IDistance
+    public interface IDistanceField
     {
         int Width
         {
             get;
         }
-
         int Height
         {
             get;
         }
-
         int Depth
         {
             get;
@@ -25,42 +23,40 @@ namespace Erde
             get;
         }
 
+        int Stride
+        {
+            get;
+        }
+
+        IntPtr CellPtr
+        {
+            get;
+        }
+
         float GetDistance (int a_x, int a_y, int a_z);
+        void SetDistance (int a_x, int a_y, int a_z, float a_distance);
     }
 
-    public class DistanceField<T> : IDistance
+    public interface IDistanceCell
     {
-        [Serializable]
+        float Distance
+        {
+            get;
+            set;
+        }
+    }
+
+    
+
+    public class DistanceField<T> : IDistanceField where T : struct
+    {
+        [Serializable, StructLayout(LayoutKind.Sequential)]
         public struct Cell
         {
-            private float m_distance;
+            public float Distance;
 
-            private T m_data;
-
-            public float Distance
-            {
-                get
-                {
-                    return m_distance;
-                }
-                set
-                {
-                    m_distance = value;
-                }
-            }
-
-            public T Data
-            {
-                get
-                {
-                    return m_data;
-                }
-                set
-                {
-                    m_data = value;
-                }
-            }
-
+            public T Data;
+            
             public static int DataSize
             {
                 get
@@ -71,39 +67,37 @@ namespace Erde
 
             public byte[] GetBytes ()
             {
-                const int offset = sizeof(float);
-                int dataSize = Marshal.SizeOf<T>();
-                int size = offset + dataSize;
+                 const int offset = sizeof(float);
+                 int dataSize = Marshal.SizeOf<T>();
+                 int size = offset + dataSize;
 
-                byte[] bytes = new byte[size];
+                 byte[] bytes = new byte[size];
 
-                Array.Copy(BitConverter.GetBytes(m_distance), bytes, offset);
-                Array.Copy(Reflection.StructureToByte(m_data), 0, bytes, offset, dataSize);
+                 Array.Copy(BitConverter.GetBytes(Distance), bytes, offset);
+                 Array.Copy(Reflection.StructureToByte(Data), 0, bytes, offset, dataSize);
 
-                return bytes;
+                 return bytes;
             }
 
             public static Cell FromBytes (byte[] a_bytes, int a_offset = 0)
             {
-                T data;
-                Reflection.ByteToStructure(a_bytes, a_offset + sizeof(float), out data);
+                 T data;
+                 Reflection.ByteToStructure(a_bytes, a_offset + sizeof(float), out data);
 
-                return new Cell()
-                {
-                    Distance = BitConverter.ToSingle(a_bytes, a_offset),
-                    Data = data
-                };
-                ;
+                 return new Cell()
+                 {
+                     Distance = BitConverter.ToSingle(a_bytes, a_offset),
+                     Data = data
+                 };
             }
         }
+        int    m_width;
+        int    m_height;
+        int    m_depth;
+               
+        float  m_spacing;
 
-        private int m_width;
-        private int m_height;
-        private int m_depth;
-
-        private float m_spacing;
-
-        private Cell[] m_distanceCell;
+        Cell[] m_distanceCell;
 
         public int Width
         {
@@ -112,7 +106,6 @@ namespace Erde
                 return m_width;
             }
         }
-
         public int Height
         {
             get
@@ -120,7 +113,6 @@ namespace Erde
                 return m_height;
             }
         }
-
         public int Depth
         {
             get
@@ -145,6 +137,23 @@ namespace Erde
             }
         }
 
+        public int Stride
+        {
+            get
+            {
+                return sizeof(float) + Marshal.SizeOf<T>();
+            }
+        }
+
+        // Future me problem I do not want to deal with this 
+        public IntPtr CellPtr
+        {
+            get
+            {
+                return Marshal.UnsafeAddrOfPinnedArrayElement(m_distanceCell, 0);
+            }
+        }
+
         public DistanceField ()
         {
         }
@@ -163,6 +172,10 @@ namespace Erde
         public float GetDistance (int a_x, int a_y, int a_z)
         {
             return m_distanceCell[(a_z * m_width * m_height) + (a_y * m_width) + a_x].Distance;
+        }
+        public void SetDistance (int a_x, int a_y, int a_z, float a_distance)
+        {
+            m_distanceCell[(a_z * m_width * m_height) + (a_y * m_width) + a_x].Distance = a_distance;
         }
 
         public Cell GetCell (int a_x, int a_y, int a_z)

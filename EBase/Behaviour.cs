@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 
 namespace Erde
 {
@@ -8,6 +9,7 @@ namespace Erde
 
         Event m_start;
         Event m_update;
+        Event m_physicsUpdate;
         
         internal Event Start
         {
@@ -25,18 +27,34 @@ namespace Erde
             }
         }
 
+        internal Event PhysicsUpdate
+        {
+            get
+            {
+                return m_physicsUpdate;
+            }
+        }
+
         public Behaviour ()
         {
-            MethodInfo method = GetType().GetMethod("Start", BindingFlags.Instance | BindingFlags.NonPublic);
+            Type type = GetType();
+
+            MethodInfo method = type.GetMethod("Start", BindingFlags.Instance | BindingFlags.NonPublic);
             if (method != null)
             {
                 m_start = (Event)method.CreateDelegate(typeof(Event), this);
             }
 
-            method = GetType().GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic);
+            method = type.GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic);
             if (method != null)
             {
                 m_update = (Event)method.CreateDelegate(typeof(Event), this);
+            }
+
+            method = type.GetMethod("PhysicsUpdate", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (method != null)
+            {
+                m_physicsUpdate = (Event)method.CreateDelegate(typeof(Event), this);
             }
         }
     }

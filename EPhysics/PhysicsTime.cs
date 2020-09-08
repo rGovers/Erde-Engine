@@ -6,29 +6,41 @@ namespace Erde.Physics
 {
     public class PhysicsTime
     {
-        static PhysicsTime m_time = null;
+        static PhysicsTime Instance = null;
 
-        double             m_deltaTime;
+        double    m_deltaTime;
 
-        int                m_updates;
-        float              m_lastUpdateCheck;
-        float              m_pupsCheck;
+        double    m_timePassed;
 
-        Stopwatch          m_stopwatch;
+        int       m_frames;
+        float     m_lastPhysicsUpdateCheck;
+        float     m_pupsCheck;
 
-        public static float DeltaTime
+        Stopwatch m_stopwatch;
+
+        public static double DeltaTime
         {
             get
             {
-                return (float)m_time.m_deltaTime;
+                if (Instance != null)
+                {
+                    return Instance.m_deltaTime;
+                }
+
+                return 0.0f;
             }
         }
 
-        public static double DeltaTimeD
+        public static double TimePassed
         {
             get
             {
-                return m_time.m_deltaTime;
+                if (Instance != null)
+                {
+                    return Instance.m_timePassed;
+                }
+
+                return 0.0f;
             }
         }
 
@@ -36,7 +48,12 @@ namespace Erde.Physics
         {
             get
             {
-                return (float)Math.Floor(m_time.m_lastUpdateCheck * 100) / 100.0f;
+                if (Instance != null)
+                {
+                    return (float)Math.Floor(Instance.m_lastPhysicsUpdateCheck * 100) / 100.0f;
+                }
+
+                return 0.0f;
             }
         }
 
@@ -45,23 +62,24 @@ namespace Erde.Physics
             m_stopwatch = new Stopwatch();
             m_stopwatch.Start();
 
-            m_updates = 0;
-            m_pupsCheck = 0.5f;
-            m_lastUpdateCheck = 0;
+            m_deltaTime = 0.0f;
+            m_timePassed = 0.0f;
 
-            if (m_time == null)
+            m_lastPhysicsUpdateCheck = 0.0f;
+            m_pupsCheck = 0.0f;
+            m_frames = 0;
+
+            if (Instance == null)
             {
-                m_time = this;
+                Instance = this;
             }
         }
 
         internal void Update ()
         {
-            long time = Environment.TickCount;
-
             m_deltaTime = m_stopwatch.Elapsed.TotalSeconds;
 
-            while (m_deltaTime == 0.0 || m_deltaTime < 0.001)
+            while (m_deltaTime < 0.0001)
             {
                 Thread.Yield();
 
@@ -69,16 +87,17 @@ namespace Erde.Physics
             }
 
             m_stopwatch.Restart();
+            m_timePassed += m_deltaTime;
 
             m_pupsCheck += (float)m_deltaTime;
-            ++m_updates;
+            ++m_frames;
 
             if (m_pupsCheck >= 0.5f)
             {
-                m_lastUpdateCheck = m_updates / m_pupsCheck;
+                m_lastPhysicsUpdateCheck = m_frames / m_pupsCheck;
 
                 m_pupsCheck -= 0.5f;
-                m_updates = 0;
+                m_frames = 0;
             }
         }
     }

@@ -49,7 +49,7 @@ namespace Erde.Graphics.GUI
 
         internal override void Draw (Vector2 a_resolution)
         {
-            if (m_texture != null )
+            if (m_texture != null)
             {
                 CalculateTrueTransform();
                 Matrix4 transform = ToMatrix(a_resolution);

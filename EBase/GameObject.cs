@@ -12,6 +12,7 @@ namespace Erde
         Transform               m_transform;
 
         Behaviour.Event         m_update;
+        Behaviour.Event         m_physicsUpdate;
 
         public Transform Transform
         {
@@ -40,11 +41,14 @@ namespace Erde
 
             foreach (Component comp in m_components)
             {
-                IDisposable disp = comp as IDisposable;
-
-                if (disp != null && !(comp is Transform))
+                lock (comp)
                 {
-                    disp.Dispose();
+                    IDisposable disp = comp as IDisposable;
+
+                    if (disp != null)
+                    {
+                        disp.Dispose();
+                    }
                 }
             }
 
@@ -94,7 +98,7 @@ namespace Erde
             {
                 m_transform = a_component as Transform;
             }
-            else if (a_component.GetType().BaseType == typeof(Behaviour))
+            else if (a_component is Behaviour)
             {
                 Behaviour behaviour = a_component as Behaviour;
                 if (behaviour.Start != null)
@@ -103,6 +107,7 @@ namespace Erde
                 }
 
                 m_update += behaviour.Update;
+                m_physicsUpdate += behaviour.PhysicsUpdate;
             }
         }
 
@@ -123,7 +128,7 @@ namespace Erde
         {
             foreach (Component comp in m_components)
             {
-                if (comp.GetType() == typeof(T))
+                if (comp is T)
                 {
                     return (T)comp;
                 }
@@ -134,12 +139,15 @@ namespace Erde
 
         public void RemoveComponent (Component a_component)
         {
-            m_components.Remove(a_component);
-
-            if (a_component is Behaviour)
+            lock (a_component)
             {
+                m_components.Remove(a_component);
+
                 Behaviour behaviour = a_component as Behaviour;
-                m_update -= behaviour.Update;
+                if (behaviour != null)
+                {
+                    m_update -= behaviour.Update;
+                }
             }
         }
         public void RemoveComponent<T> (T a_component) where T : Component
@@ -150,11 +158,20 @@ namespace Erde
         {
             for (int i = 0; i < m_components.Count; ++i)
             {
-                if (m_components[i].GetType() == typeof(T))
-                {
-                    m_components[i].SetGameObject(null);
+                Component comp = m_components[i] as T;
 
-                    m_components.Remove(m_components[i]);
+                if (comp != null)
+                {
+                    RemoveComponent(comp);
+
+                    lock (comp)
+                    {
+                        IDisposable disposable = comp as IDisposable;
+                        if (disposable != null)
+                        {
+                            disposable.Dispose();
+                        }
+                    }
 
                     return;
                 }
@@ -180,6 +197,26 @@ namespace Erde
                         {
                             obj.m_update.Invoke();
                         }        
+                    }
+                }
+            }
+        }
+        public static void PhysicsUpdateBehaviours ()
+        {
+            for (int i = 0; i < m_gameObjects.Count; ++i)
+            {
+                GameObject obj = m_gameObjects[i];
+
+                if (obj == null)
+                {
+                    continue;
+                }
+
+                lock (obj)
+                {
+                    if (obj.m_physicsUpdate != null)
+                    {
+                        obj.m_physicsUpdate.Invoke();
                     }
                 }
             }

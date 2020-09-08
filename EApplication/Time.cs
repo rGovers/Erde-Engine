@@ -26,7 +26,6 @@ namespace Erde.Application
                 return (float)m_time.m_deltaTime;
             }
         }
-
         public static double UnscaledDeltaTimeD
         {
             get
@@ -46,7 +45,6 @@ namespace Erde.Application
                 m_time.m_timeScale = (double)value;
             }
         }
-
         public static double TimeScaleD
         {
             get
@@ -66,7 +64,6 @@ namespace Erde.Application
                 return UnscaledDeltaTimeD * TimeScaleD;
             }
         }
-
         public static float DeltaTime
         {
             get
@@ -82,7 +79,6 @@ namespace Erde.Application
                 return m_time.m_timePassed;
             }
         }
-
         public static float TimePassed
         {
             get

@@ -350,7 +350,7 @@ namespace Erde.Voxel
             return p;
         }
 
-        private static Chunk.Vertex[] VertexList (IDistance a_distanceField, DistanceField<Chunk.Voxel>.Cell[] a_cells, int a_x, int a_y, int a_z, float a_iso, int a_cubeIndex)
+        private static Chunk.Vertex[] VertexList (IDistanceField a_distanceField, DistanceField<Chunk.Voxel>.Cell[] a_cells, int a_x, int a_y, int a_z, float a_iso, int a_cubeIndex)
         {
             Chunk.Vertex[] vertList = new Chunk.Vertex[12];
 
@@ -562,7 +562,7 @@ namespace Erde.Voxel
             return vertList;
         }
 
-        public static void Polygonise (IDistance a_distanceField, DistanceField<Chunk.Voxel>.Cell[] a_cells, int a_x, int a_y, int a_z, float a_iso, List<Chunk.Vertex> a_verticies)
+        public static void Polygonise (IDistanceField a_distanceField, DistanceField<Chunk.Voxel>.Cell[] a_cells, int a_x, int a_y, int a_z, float a_iso, List<Chunk.Vertex> a_verticies)
         {
             int cubeIndex = 0;
 
