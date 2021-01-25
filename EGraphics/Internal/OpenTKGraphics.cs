@@ -256,6 +256,10 @@ namespace Erde.Graphics.Internal
                 {
                     light.BindShadowDrawing();
 
+#if DEBUG_INFO
+                    Pipeline.GLError("Graphics: Binding Shadow Drawing: ");
+#endif
+
                     GL.Clear(ClearBufferMask.DepthBufferBit);
 
                     frustrum = new Frustum(light.View * light.Projection);
@@ -293,7 +297,7 @@ namespace Erde.Graphics.Internal
             }
 
 #if DEBUG_INFO
-            Pipeline.GLError("Graphics: Drawing Light: ");
+            Pipeline.GLError("Graphics: Drawing Shadow: ");
 #endif
         }
 

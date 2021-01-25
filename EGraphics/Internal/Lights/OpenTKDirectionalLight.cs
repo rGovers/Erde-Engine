@@ -39,14 +39,14 @@ namespace Erde.Graphics.Internal.Lights
 
                 Matrix4 viewProj = view * proj;
 
-                GL.ProgramUniformMatrix4(handle, 4, false, ref viewProj);
+                GL.UniformMatrix4(4, false, ref viewProj);
             }
         }
         public void BindShadowDrawing ()
         {
             if (m_shadowBuffer != -1)
             {
-                OpenTKProgram program = (OpenTKProgram)DirectionalLight.LightMaterial.Program.InternalObject;
+                OpenTKProgram program = (OpenTKProgram)m_light.ShadowProgram.InternalObject;
                 int handle = program.Handle;
 
                 Transform transform = m_light.Transform;
