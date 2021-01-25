@@ -10,7 +10,7 @@ namespace Erde.Voxel
     {
         #region Tables
 
-        private static readonly int[] m_edgeTable =
+        static readonly int[] EdgeTable =
         {
             0x0  , 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,
             0x80c, 0x905, 0xa0f, 0xb06, 0xc0a, 0xd03, 0xe09, 0xf00,
@@ -46,7 +46,7 @@ namespace Erde.Voxel
             0x70c, 0x605, 0x50f, 0x406, 0x30a, 0x203, 0x109, 0x0
         };
 
-        private static readonly int[][] m_triTable = new int[][]
+        static readonly int[][] TriTable = new int[][]
         {
             new int[] {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
             new int[] {0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
@@ -354,9 +354,9 @@ namespace Erde.Voxel
         {
             Chunk.Vertex[] vertList = new Chunk.Vertex[12];
 
-            if ((m_edgeTable[a_cubeIndex] & 1) != 0)
+            if ((EdgeTable[a_cubeIndex] & 1) != 0)
             {
-                vertList[0].position = new Vector4(LinearInterp
+                vertList[0].Position = new Vector4(LinearInterp
                 (
                     new Vector4((a_x + 0) * a_distanceField.Spacing,
                                 (a_y + 0) * a_distanceField.Spacing,
@@ -369,11 +369,11 @@ namespace Erde.Voxel
                     a_iso
                 ), 1.0f);
 
-                vertList[0].color = a_cells[0].Data.UColor;
+                vertList[0].Color = a_cells[0].Data.UColor;
             }
-            if ((m_edgeTable[a_cubeIndex] & 2) != 0)
+            if ((EdgeTable[a_cubeIndex] & 2) != 0)
             {
-                vertList[1].position = new Vector4(LinearInterp
+                vertList[1].Position = new Vector4(LinearInterp
                 (
                     new Vector4((a_x + 1) * a_distanceField.Spacing,
                                 (a_y + 0) * a_distanceField.Spacing,
@@ -386,11 +386,11 @@ namespace Erde.Voxel
                     a_iso
                     ), 1.0f);
 
-                vertList[1].color = a_cells[1].Data.UColor;
+                vertList[1].Color = a_cells[1].Data.UColor;
             }
-            if ((m_edgeTable[a_cubeIndex] & 4) != 0)
+            if ((EdgeTable[a_cubeIndex] & 4) != 0)
             {
-                vertList[2].position = new Vector4(LinearInterp
+                vertList[2].Position = new Vector4(LinearInterp
                 (
                     new Vector4((a_x + 1) * a_distanceField.Spacing,
                                 (a_y + 0) * a_distanceField.Spacing,
@@ -403,11 +403,11 @@ namespace Erde.Voxel
                     a_iso
                 ), 1.0f);
 
-                vertList[2].color = a_cells[3].Data.UColor;
+                vertList[2].Color = a_cells[3].Data.UColor;
             }
-            if ((m_edgeTable[a_cubeIndex] & 8) != 0)
+            if ((EdgeTable[a_cubeIndex] & 8) != 0)
             {
-                vertList[3].position = new Vector4(LinearInterp
+                vertList[3].Position = new Vector4(LinearInterp
                 (
                     new Vector4((a_x + 0) * a_distanceField.Spacing,
                                 (a_y + 0) * a_distanceField.Spacing,
@@ -420,11 +420,11 @@ namespace Erde.Voxel
                     a_iso
                 ), 1.0f);
 
-                vertList[3].color = a_cells[0].Data.UColor;
+                vertList[3].Color = a_cells[0].Data.UColor;
             }
-            if ((m_edgeTable[a_cubeIndex] & 16) != 0)
+            if ((EdgeTable[a_cubeIndex] & 16) != 0)
             {
-                vertList[4].position = new Vector4(LinearInterp
+                vertList[4].Position = new Vector4(LinearInterp
                 (
                     new Vector4((a_x + 0) * a_distanceField.Spacing,
                                 (a_y + 1) * a_distanceField.Spacing,
@@ -437,11 +437,11 @@ namespace Erde.Voxel
                     a_iso
                 ), 1.0f);
 
-                vertList[4].color = a_cells[4].Data.UColor;
+                vertList[4].Color = a_cells[4].Data.UColor;
             }
-            if ((m_edgeTable[a_cubeIndex] & 32) != 0)
+            if ((EdgeTable[a_cubeIndex] & 32) != 0)
             {
-                vertList[5].position = new Vector4(LinearInterp
+                vertList[5].Position = new Vector4(LinearInterp
                 (
                     new Vector4((a_x + 1) * a_distanceField.Spacing,
                                 (a_y + 1) * a_distanceField.Spacing,
@@ -454,11 +454,11 @@ namespace Erde.Voxel
                     a_iso
                 ), 1.0f);
 
-                vertList[5].color = a_cells[5].Data.UColor;
+                vertList[5].Color = a_cells[5].Data.UColor;
             }
-            if ((m_edgeTable[a_cubeIndex] & 64) != 0)
+            if ((EdgeTable[a_cubeIndex] & 64) != 0)
             {
-                vertList[6].position = new Vector4(LinearInterp
+                vertList[6].Position = new Vector4(LinearInterp
                 (
                     new Vector4((a_x + 1) * a_distanceField.Spacing,
                                 (a_y + 1) * a_distanceField.Spacing,
@@ -471,11 +471,11 @@ namespace Erde.Voxel
                     a_iso
                 ), 1.0f);
 
-                vertList[6].color = a_cells[7].Data.UColor;
+                vertList[6].Color = a_cells[7].Data.UColor;
             }
-            if ((m_edgeTable[a_cubeIndex] & 128) != 0)
+            if ((EdgeTable[a_cubeIndex] & 128) != 0)
             {
-                vertList[7].position = new Vector4(LinearInterp
+                vertList[7].Position = new Vector4(LinearInterp
                 (
                     new Vector4((a_x + 0) * a_distanceField.Spacing,
                                 (a_y + 1) * a_distanceField.Spacing,
@@ -488,11 +488,11 @@ namespace Erde.Voxel
                     a_iso
                 ), 1.0f);
 
-                vertList[7].color = a_cells[4].Data.UColor;
+                vertList[7].Color = a_cells[4].Data.UColor;
             }
-            if ((m_edgeTable[a_cubeIndex] & 256) != 0)
+            if ((EdgeTable[a_cubeIndex] & 256) != 0)
             {
-                vertList[8].position = new Vector4(LinearInterp
+                vertList[8].Position = new Vector4(LinearInterp
                 (
                     new Vector4((a_x + 0) * a_distanceField.Spacing,
                                 (a_y + 0) * a_distanceField.Spacing,
@@ -505,11 +505,11 @@ namespace Erde.Voxel
                     a_iso
                 ), 1.0f);
 
-                vertList[8].color = a_cells[0].Data.UColor;
+                vertList[8].Color = a_cells[0].Data.UColor;
             }
-            if ((m_edgeTable[a_cubeIndex] & 512) != 0)
+            if ((EdgeTable[a_cubeIndex] & 512) != 0)
             {
-                vertList[9].position = new Vector4(LinearInterp
+                vertList[9].Position = new Vector4(LinearInterp
                 (
                     new Vector4((a_x + 1) * a_distanceField.Spacing,
                                 (a_y + 0) * a_distanceField.Spacing,
@@ -522,11 +522,11 @@ namespace Erde.Voxel
                     a_iso
                 ), 1.0f);
 
-                vertList[9].color = a_cells[1].Data.UColor;
+                vertList[9].Color = a_cells[1].Data.UColor;
             }
-            if ((m_edgeTable[a_cubeIndex] & 1024) != 0)
+            if ((EdgeTable[a_cubeIndex] & 1024) != 0)
             {
-                vertList[10].position = new Vector4(LinearInterp
+                vertList[10].Position = new Vector4(LinearInterp
                 (
                     new Vector4((a_x + 1) * a_distanceField.Spacing,
                                 (a_y + 0) * a_distanceField.Spacing,
@@ -539,11 +539,11 @@ namespace Erde.Voxel
                     a_iso
                 ), 1.0f);
 
-                vertList[10].color = a_cells[2].Data.UColor;
+                vertList[10].Color = a_cells[2].Data.UColor;
             }
-            if ((m_edgeTable[a_cubeIndex] & 2048) != 0)
+            if ((EdgeTable[a_cubeIndex] & 2048) != 0)
             {
-                vertList[11].position = new Vector4(LinearInterp
+                vertList[11].Position = new Vector4(LinearInterp
                 (
                     new Vector4((a_x + 0) * a_distanceField.Spacing,
                                 (a_y + 0) * a_distanceField.Spacing,
@@ -556,7 +556,7 @@ namespace Erde.Voxel
                     a_iso
                 ), 1.0f);
 
-                vertList[11].color = a_cells[3].Data.UColor;
+                vertList[11].Color = a_cells[3].Data.UColor;
             }
 
             return vertList;
@@ -574,18 +574,18 @@ namespace Erde.Voxel
                 }
             }
 
-            if (m_edgeTable[cubeIndex] == 0)
+            if (EdgeTable[cubeIndex] == 0)
             {
                 return;
             }
 
             Chunk.Vertex[] vertList = VertexList(a_distanceField, a_cells, a_x, a_y, a_z, a_iso, cubeIndex);
 
-            for (int i = 0; m_triTable[cubeIndex][i] != -1; i += 3)
+            for (int i = 0; TriTable[cubeIndex][i] != -1; i += 3)
             {
-                a_verticies.Add(vertList[m_triTable[cubeIndex][i + 0]]);
-                a_verticies.Add(vertList[m_triTable[cubeIndex][i + 1]]);
-                a_verticies.Add(vertList[m_triTable[cubeIndex][i + 2]]);
+                a_verticies.Add(vertList[TriTable[cubeIndex][i + 0]]);
+                a_verticies.Add(vertList[TriTable[cubeIndex][i + 1]]);
+                a_verticies.Add(vertList[TriTable[cubeIndex][i + 2]]);
             }
         }
     }

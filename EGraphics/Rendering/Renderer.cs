@@ -14,7 +14,7 @@ namespace Erde.Graphics.Rendering
 
         protected Graphics m_graphics;
 
-        public abstract uint Indicies
+        public abstract uint Indices
         {
             get;
         }
@@ -36,7 +36,7 @@ namespace Erde.Graphics.Rendering
         {
             get
             {
-                return m_visible && Indicies > 0;
+                return m_visible && Indices > 0;
             }
             set
             {
@@ -84,16 +84,16 @@ namespace Erde.Graphics.Rendering
                 m_newMaterial = a_newMaterial;
             }
 
-            public void AddObject (LinkedList<Graphics.DrawingContainer> a_objects)
+            public void AddObject (LinkedList<DrawingContainer> a_objects)
             {
                 // Finds the renderer linked to the old material and removes it
                 if (m_renderer.Material != null)
                 {
-                    foreach (Graphics.DrawingContainer cont in a_objects)
+                    foreach (DrawingContainer cont in a_objects)
                     {
                         if (cont.Material == m_renderer.Material)
                         {
-                            for (LinkedListNode<Graphics.DrawingContainer.RenderingContainer> iter = cont.Renderers.First; iter != null; iter = iter.Next)
+                            for (LinkedListNode<DrawingContainer.RenderingContainer> iter = cont.Renderers.First; iter != null; iter = iter.Next)
                             {
                                 if (iter.Value.Renderer == m_renderer)
                                 {
@@ -113,7 +113,7 @@ namespace Erde.Graphics.Rendering
                 m_renderer.AddObject(a_objects);
             }
 
-            public void RemoveObject (LinkedList<Graphics.DrawingContainer> a_objects)
+            public void RemoveObject (LinkedList<DrawingContainer> a_objects)
             {
                
             }
@@ -139,7 +139,7 @@ namespace Erde.Graphics.Rendering
         {
             m_graphics = a_graphics;
 
-            m_graphics.InputQueue.Enqueue(new MaterialRebind(this, a_material));
+            m_graphics.AddObject(new MaterialRebind(this, a_material));
         }
 
         public Renderer ()
@@ -148,20 +148,13 @@ namespace Erde.Graphics.Rendering
             m_visible = true;
         }
 
-        public Renderer (Material a_material, Transform a_anchor, Graphics a_graphics)
-        {
-            m_material = a_material;
-            m_graphics = a_graphics;
-
-            m_graphics.InputQueue.Enqueue(this);
-        }
-
         void Dispose (bool a_state)
         {
-            Debug.Assert(a_state, string.Format("[Warning] Resource leaked {0}", GetType().ToString()));
+#if DEBUG_INFO
+            Tools.VerifyObjectMemoryState(this, a_state);
+#endif
 
-            // m_graphics.InputQueue.Enqueue(new Cleanup(this, m_material));
-            m_graphics.DisposalQueue.Enqueue(this);
+            m_graphics.RemoveObject(this);
         }
 
         ~Renderer ()
@@ -175,7 +168,7 @@ namespace Erde.Graphics.Rendering
             GC.SuppressFinalize(this);
         }
 
-        public void AddObject (LinkedList<Graphics.DrawingContainer> a_objects)
+        public void AddObject (LinkedList<DrawingContainer> a_objects)
         {
             if (m_material == null)
             {
@@ -183,11 +176,11 @@ namespace Erde.Graphics.Rendering
             }
 
             // Finds the material linked to the Renderer object and adds it to the materials render list
-            foreach (Graphics.DrawingContainer container in a_objects)
+            foreach (DrawingContainer container in a_objects)
             {
                 if (container.Material == m_material)
                 {
-                    container.Renderers.AddLast(new Graphics.DrawingContainer.RenderingContainer()
+                    container.Renderers.AddLast(new DrawingContainer.RenderingContainer()
                     {
                         Renderer = this
                     });
@@ -197,20 +190,20 @@ namespace Erde.Graphics.Rendering
             }
 
             // The material was not found so add the material to the list and add the renderer to the materials list
-            Graphics.DrawingContainer cont = new Graphics.DrawingContainer(m_material);
-            cont.Renderers.AddLast(new Graphics.DrawingContainer.RenderingContainer()
+            DrawingContainer cont = new DrawingContainer(m_material);
+            cont.Renderers.AddLast(new DrawingContainer.RenderingContainer()
             {
                 Renderer = this
             });
             a_objects.AddLast(cont);
         }
-        public void RemoveObject (LinkedList<Graphics.DrawingContainer> a_objects)
+        public void RemoveObject (LinkedList<DrawingContainer> a_objects)
         {
-            foreach (Graphics.DrawingContainer cont in a_objects)
+            foreach (DrawingContainer cont in a_objects)
             {
                 if (cont.Material == m_material)
                 {
-                    foreach (Graphics.DrawingContainer.RenderingContainer rend in cont.Renderers)
+                    foreach (DrawingContainer.RenderingContainer rend in cont.Renderers)
                     {
                         if (rend.Renderer == this)
                         {

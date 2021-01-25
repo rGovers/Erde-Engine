@@ -118,7 +118,7 @@ namespace Erde.Application
         {
             m_deltaTime = m_stopwatch.Elapsed.TotalSeconds;
 
-            while (m_deltaTime == 0.0f || m_deltaTime < 0.0001)
+            while (m_deltaTime < 0.0001)
             {
                 Thread.Yield();
 

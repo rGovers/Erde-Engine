@@ -5,7 +5,7 @@ namespace Erde
 {
     public class GameObject : IDisposable
     {
-        static List<GameObject> m_gameObjects = new List<GameObject>();
+        static List<GameObject> GameObjects = new List<GameObject>();
 
         List<Component>         m_components;
 
@@ -28,7 +28,10 @@ namespace Erde
 
             m_transform = AddComponent<Transform>();
 
-            m_gameObjects.Add(this);
+            lock (GameObjects)
+            {
+                GameObjects.Add(this);
+            }
         }
 
         void Dispose (bool a_state)
@@ -36,10 +39,14 @@ namespace Erde
 #if DEBUG_INFO
             Tools.VerifyObjectMemoryState(this, a_state);
 #endif
+            lock (GameObjects)
+            {
+                GameObjects.Remove(this);
+            }
 
-            m_gameObjects.Remove(this);
-
-            foreach (Component comp in m_components)
+            lock (this)
+            {
+                foreach (Component comp in m_components)
             {
                 lock (comp)
                 {
@@ -55,6 +62,7 @@ namespace Erde
             m_components.Clear();
 
             m_transform = null;
+            }
         }
 
         ~GameObject ()
@@ -62,7 +70,7 @@ namespace Erde
             Dispose(false);
         }
 
-        public void Dispose ()
+        public virtual void Dispose ()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
@@ -87,27 +95,30 @@ namespace Erde
 
         internal void AddComponent (Component a_component)
         {
-            if (a_component.GameObject != this)
+            lock (this)
             {
-                a_component.SetGameObject(this);
-            }
-
-            m_components.Add(a_component);
-
-            if (a_component is Transform)
-            {
-                m_transform = a_component as Transform;
-            }
-            else if (a_component is Behaviour)
-            {
-                Behaviour behaviour = a_component as Behaviour;
-                if (behaviour.Start != null)
+                if (a_component.GameObject != this)
                 {
-                    behaviour.Start.Invoke();
+                    a_component.SetGameObject(this);
                 }
 
-                m_update += behaviour.Update;
-                m_physicsUpdate += behaviour.PhysicsUpdate;
+                m_components.Add(a_component);
+
+                if (a_component is Transform)
+                {
+                    m_transform = a_component as Transform;
+                }
+                else if (a_component is Behaviour)
+                {
+                    Behaviour behaviour = a_component as Behaviour;
+                    if (behaviour.Start != null)
+                    {
+                        behaviour.Start.Invoke();
+                    }
+
+                    m_update += behaviour.Update;
+                    m_physicsUpdate += behaviour.PhysicsUpdate;
+                }
             }
         }
 
@@ -139,73 +150,81 @@ namespace Erde
 
         public void RemoveComponent (Component a_component)
         {
-            lock (a_component)
+            lock (this)
             {
-                m_components.Remove(a_component);
-
-                Behaviour behaviour = a_component as Behaviour;
-                if (behaviour != null)
+                lock (a_component)
                 {
-                    m_update -= behaviour.Update;
+                    m_components.Remove(a_component);
+
+                    Behaviour behaviour = a_component as Behaviour;
+                    if (behaviour != null)
+                    {
+                        m_update -= behaviour.Update;
+                    }
                 }
             }
         }
         public void RemoveComponent<T> (T a_component) where T : Component
         {
-            m_components.Remove(a_component);
+            lock (this)
+            {
+                m_components.Remove(a_component);
+            }
         }
         public void RemoveComponent<T> () where T : Component
         {
-            for (int i = 0; i < m_components.Count; ++i)
+            lock (this)
             {
-                Component comp = m_components[i] as T;
-
-                if (comp != null)
+                for (int i = 0; i < m_components.Count; ++i)
                 {
-                    RemoveComponent(comp);
+                    Component comp = m_components[i] as T;
 
-                    lock (comp)
+                    if (comp != null)
                     {
-                        IDisposable disposable = comp as IDisposable;
-                        if (disposable != null)
-                        {
-                            disposable.Dispose();
-                        }
-                    }
+                        RemoveComponent(comp);
 
-                    return;
+                        lock (comp)
+                        {
+                            IDisposable disposable = comp as IDisposable;
+                            if (disposable != null)
+                            {
+                                disposable.Dispose();
+                            }
+                        }
+
+                        return;
+                    }
                 }
             }
         }
 
         public static void UpdateBehaviours ()
         {
-            for (int i = 0; i < m_gameObjects.Count; ++i)
+            GameObject[] gameObjects = GameObjects.ToArray();
+            for (int i = 0; i < gameObjects.Length; ++i)
             {
-                GameObject obj = m_gameObjects[i];
+                GameObject obj = gameObjects[i];
 
                 if (obj == null)
                 {
                     continue;
                 }
 
-                if (obj.m_update != null)
+                lock (obj)
                 {
-                    lock (obj)
+                    if (obj.m_update != null)
                     {
-                        if (obj.m_update != null)
-                        {
-                            obj.m_update.Invoke();
-                        }        
-                    }
+                        obj.m_update.Invoke();
+                    }        
                 }
             }
         }
         public static void PhysicsUpdateBehaviours ()
         {
-            for (int i = 0; i < m_gameObjects.Count; ++i)
+            GameObject[] gameObjects = GameObjects.ToArray();
+            for (int i = 0; i < gameObjects.Length; ++i)
             {
-                GameObject obj = m_gameObjects[i];
+                GameObject obj = gameObjects[i];
 
                 if (obj == null)
                 {
@@ -223,14 +242,17 @@ namespace Erde
         }
         public static void ClearAllGameObjects ()
         {
-            for (int i = 0; i < m_gameObjects.Count; ++i)
+            lock (GameObjects)
             {
-                GameObject obj = m_gameObjects[i];
+                for (int i = 0; i < GameObjects.Count; ++i)
+                {
+                    GameObject obj = GameObjects[i];
 
-                obj.Dispose();
+                    obj.Dispose();
+                }
+
+                GameObjects.Clear();
             }
-
-            m_gameObjects.Clear();
         }
     }
 }

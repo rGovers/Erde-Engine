@@ -1,0 +1,50 @@
+cmake_minimum_required (VERSION 2.6)
+project (ENativePhysics)
+
+FILE (STRINGS "VERSION" BULLET_VERSION)
+
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY $<1:${PROJECT_SOURCE_DIR}/../bin/>)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY $<1:${PROJECT_SOURCE_DIR}/../bin/>)
+
+# set(CMAKE_SHARED_LIBRARY_PREFIX "")
+
+IF(NOT WIN32)
+	set(BUILD_SHARED_LIBS ON)
+	SET(DL ${CMAKE_DL_LIBS})
+	IF(CMAKE_SYSTEM_NAME MATCHES "Linux")
+		MESSAGE("Linux")
+		SET(OSDEF -D_LINUX)
+	ELSE(CMAKE_SYSTEM_NAME MATCHES "Linux")
+		IF(APPLE)
+			MESSAGE("Apple")
+			SET(OSDEF -D_DARWIN)
+		ELSE(APPLE)
+			MESSAGE("BSD?")
+			SET(OSDEF -D_BSD)
+		ENDIF(APPLE)
+	ENDIF(CMAKE_SYSTEM_NAME MATCHES "Linux")
+ELSE(NOT WIN32)
+	set(BUILD_SHARED_LIBS OFF)
+ENDIF(NOT WIN32)
+
+set(USE_DOUBLE_PRECISION OFF)
+set(USE_GRAPHICAL_BENCHMARK OFF)
+set(USE_SOFT_BODY_MULTI_BODY_DYNAMICS_WORLD ON)
+
+set(BULLET2_MULTITHREADING OFF)
+
+set(USE_MSVC_INCREMENTAL_LINKING OFF)
+set(USE_CUSTOM_VECTOR_MATH OFF)
+
+set(BUILD_BULLET3 ON)
+
+file(GLOB SOURCES "src/*.cpp")
+include_directories(
+	"${PROJECT_SOURCE_DIR}/lib/bullet3/src"
+	"${PROJECT_SOURCE_DIR}/include"
+)
+
+add_subdirectory("lib/bullet3/src")
+
+add_library(ENativePhysics SHARED ${SOURCES})
+target_link_libraries(ENativePhysics BulletInverseDynamics BulletSoftBody BulletCollision BulletDynamics LinearMath Bullet3Common Bullet3Dynamics Bullet3Collision Bullet3Geometry)

@@ -1,11 +1,11 @@
-﻿using Erde.Discord.Commands;
+﻿using Erde.Discord.Client;
+using Erde.Discord.Commands;
 using Erde.Discord.Message;
 using Erde.Discord.Payload;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Pipes;
 using System.Threading;
 
 namespace Erde.Discord
@@ -30,7 +30,8 @@ namespace Erde.Discord
         public Join Spectate;
 
         e_RPCState                m_state;
-        byte[]                    m_buffer;
+
+        InternalClient            m_internalClient;
 
         int                       m_connectedPipe;
 
@@ -38,8 +39,6 @@ namespace Erde.Discord
 
         bool                      m_shutdown;
         bool                      m_join;
-
-        NamedPipeClientStream     m_stream;
 
         Queue<Frame>              m_frameQueue;
         Queue<IMessage>           m_messageQueue;
@@ -87,9 +86,32 @@ namespace Erde.Discord
 
             m_state = e_RPCState.Disconnected;
 
-            m_nounce = 0;
+            switch (Environment.OSVersion.Platform)
+            {
+                case PlatformID.Unix:
+                {
+                    m_internalClient = new UnixClient(this);
 
-            m_buffer = new byte[1024 * 16];
+                    break;
+                }
+                case PlatformID.Win32NT:
+                case PlatformID.Win32S:
+                case PlatformID.Win32Windows:
+                case PlatformID.WinCE:
+                {
+                    m_internalClient = new WindowsClient(this);
+
+                    break;
+                }
+                default:
+                {
+                    Debug.Assert(false);
+
+                    break;
+                }
+            }
+
+            m_nounce = 0;
         }
 
         void EnqueueMessage (IMessage a_message)
@@ -106,7 +128,7 @@ namespace Erde.Discord
                 m_commandQueue.Enqueue(a_command);
             }
         }
-        void EnqueueFrame (Frame a_frame)
+        internal void EnqueueFrame (Frame a_frame)
         {
             lock (m_frameQueue)
             {
@@ -116,28 +138,28 @@ namespace Erde.Discord
 
         bool WriteFrame (Frame a_frame)
         {
-            if (!m_stream.IsConnected)
+            if (!m_internalClient.IsConnected)
             {
                 InternalConsole.AddMessage("Failed to write to disconnected stream");
             }
 
             try
             {
-                a_frame.WriteToStream(m_stream);
+                m_internalClient.WriteToStream(a_frame.ToBytes());
 
                 return true;
             }
             catch (IOException e)
             {
-                InternalConsole.AddMessage("Discord Client: Failed to write frame: IOException: " + e.Message, InternalConsole.e_Alert.Error);
+                InternalConsole.Error(string.Format("Discord Client: Failed to write frame: IOException: {0}", e.Message));
             }
             catch (ObjectDisposedException)
             {
-                InternalConsole.AddMessage("Discord Client: Failed to write frame: Disposed", InternalConsole.e_Alert.Error);
+                InternalConsole.Error("Discord Client: Failed to write frame: Disposed");
             }
             catch (InvalidOperationException)
             {
-                InternalConsole.AddMessage("Discord Client: Invalid Operaion when writing frame", InternalConsole.e_Alert.Error);
+                InternalConsole.Error("Discord Client: Invalid Operaion when writing frame");
             }
 
             return false;
@@ -165,7 +187,7 @@ namespace Erde.Discord
 
             if (m_state != e_RPCState.Disconnected)
             {
-                InternalConsole.AddMessage("Discord Client: State must be disconnected to handshake", InternalConsole.e_Alert.Warning);
+                InternalConsole.Warning("Discord Client: State must be disconnected to handshake");
 
                 return;
             }
@@ -182,7 +204,8 @@ namespace Erde.Discord
             {
                 ErrorMessage error = a_event.GetObject<ErrorMessage>();
 
-                InternalConsole.AddMessage(string.Format("Discord responded with error: ({0}) {1}", error.ErrorCode, error.Message), InternalConsole.e_Alert.Error);
+                InternalConsole.Error(string.Format("Discord responded with error: ({0}) {1}", error.ErrorCode, error.Message));
+
                 EnqueueMessage(error);
             }
 
@@ -232,7 +255,7 @@ namespace Erde.Discord
             bool write = m_commandQueue.Count > 0;
             ICommand command = null;
 
-            while (write && m_stream.IsConnected)
+            while (write && m_internalClient.IsConnected)
             {
                 command = m_commandQueue.Peek();
 
@@ -242,7 +265,7 @@ namespace Erde.Discord
 
                     if (!WriteFrame(new Frame(Frame.e_OpCode.Close, new Handshake() { Version = m_version, ClientID = m_clientID })))
                     {
-                        InternalConsole.AddMessage("Discord Client: Handwave Failed", InternalConsole.e_Alert.Error);
+                        InternalConsole.Error("Discord Client: Handwave Failed");
                     }
 
                     return;
@@ -289,13 +312,13 @@ namespace Erde.Discord
 
             if (!connected)
             {
-                InternalConsole.AddMessage("Failed to connect to Discord", InternalConsole.e_Alert.Error);
+                InternalConsole.Error("Failed to connect to Discord");
 
                 m_shutdown = true;
             }
             else
             {
-                Read();
+                m_internalClient.BeginRead();
 
                 EnqueueMessage(new ConnectionEstablishedMessage(m_connectedPipe));
 
@@ -312,7 +335,9 @@ namespace Erde.Discord
                         case Frame.e_OpCode.Close:
                             {
                                 ClosePayload close = frame.GetObject<ClosePayload>();
+
                                 InternalConsole.AddMessage("Discord Client Remotely Terminated");
+
                                 EnqueueMessage(new CloseMessage(close.Code, close.Reason));
 
                                 m_shutdown = true;
@@ -340,7 +365,7 @@ namespace Erde.Discord
 
                                 if (frame.Data == null)
                                 {
-                                    InternalConsole.AddMessage("Discord Client: No data in frame", InternalConsole.e_Alert.Error);
+                                    InternalConsole.Error("Discord Client: No data in frame");
                                 }
 
                                 EventPayload response = frame.GetObject<EventPayload>();
@@ -350,7 +375,7 @@ namespace Erde.Discord
                             }
                         default:
                             {
-                                InternalConsole.AddMessage("Discord Client: Invalid Operation", InternalConsole.e_Alert.Error);
+                                InternalConsole.Error("Discord Client: Invalid Operation");
                                 m_shutdown = true;
 
                                 break;
@@ -367,94 +392,15 @@ namespace Erde.Discord
             m_join = true;
         }
 
-        void Read ()
-        {
-            if (!m_stream.IsConnected)
-            {
-                return;
-            }
-
-            try
-            {
-                m_stream.BeginRead(m_buffer, 0, m_buffer.Length, EndRead, m_stream.IsConnected);
-            }
-            catch (ObjectDisposedException)
-            {
-                InternalConsole.AddMessage("Discord Client: Attempted to read from disposed stream", InternalConsole.e_Alert.Error);
-                return;
-            }
-            catch (InvalidOperationException)
-            {
-                InternalConsole.AddMessage("Discord Client: Attempted to read from closed pipe", InternalConsole.e_Alert.Error);
-                return;
-            }
-        }
-        void EndRead (IAsyncResult a_callback)
-        {
-            int bytes = -1;
-
-            try
-            {
-                bytes = m_stream.EndRead(a_callback);
-            }
-            catch (IOException)
-            {
-                InternalConsole.AddMessage("Discord Client: Attempted to read from closed pipe", InternalConsole.e_Alert.Error);
-                return;
-            }
-            catch (ObjectDisposedException)
-            {
-                InternalConsole.AddMessage("Discord Client: Attempted to end reading from a disposed pipe", InternalConsole.e_Alert.Error);
-                return;
-            }
-            catch (NullReferenceException)
-            {
-                InternalConsole.AddMessage("Discord Client: Attempted to connect to null pipe", InternalConsole.e_Alert.Error);
-                return;
-            }
-
-            if (bytes > 0)
-            {
-                using (MemoryStream stream = new MemoryStream(m_buffer, 0, bytes))
-                {
-                    Frame frame = Frame.ReadStream(stream);
-
-                    if (frame != null)
-                    {
-                        EnqueueFrame(frame);
-                    }
-                }
-            }
-
-            if (m_stream.IsConnected)
-            {
-                Read();
-            }
-        }
-
         bool AttemptConnection (int a_pipe)
         {
             string pipename = string.Format(PIPENAME, a_pipe);
 
-            try
+            if (m_internalClient.AttemptConnection(pipename))
             {
-                m_stream = new NamedPipeClientStream(".", pipename, PipeDirection.InOut, PipeOptions.Asynchronous);
-                m_stream.Connect(1000);
-
-                do
-                {
-                    Thread.Sleep(10);
-                }
-                while (!m_stream.IsConnected);
-
-                InternalConsole.AddMessage("Connected: " + pipename);
                 m_connectedPipe = a_pipe;
 
                 return true;
-            }
-            catch (Exception e)
-            {
-                InternalConsole.AddMessage(string.Format("Failed to connect to {0}: {1}", pipename, e.Message), InternalConsole.e_Alert.Error);
             }
 
             return false;

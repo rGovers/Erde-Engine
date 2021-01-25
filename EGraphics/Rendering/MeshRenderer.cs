@@ -1,4 +1,5 @@
 using Erde.Graphics.Lights;
+using Erde.Graphics.Variables;
 using OpenTK.Graphics.OpenGL;
 
 namespace Erde.Graphics.Rendering
@@ -20,11 +21,11 @@ namespace Erde.Graphics.Rendering
             }
         }
 
-        public override uint Indicies
+        public override uint Indices
         {
             get
             {
-                return m_model.Indicies;
+                return m_model.Indices;
             }
         }
 
@@ -38,40 +39,21 @@ namespace Erde.Graphics.Rendering
 
         public override void Draw (Camera a_camera)
         {
-            GL.BindVertexArray(m_model.VertexArrayObject);
-            // Draws the mesh
-            GL.DrawElements(BeginMode.Triangles, m_model.Indicies, DrawElementsType.UnsignedShort, 0);
+            m_model.Bind();
 
-#if DEBUG_INFO
-            Graphics.AddTriangles(m_model.Indicies, PrimitiveType.Triangles);
-#endif
+            GL.DrawElements(BeginMode.Triangles, (int)m_model.Indices, DrawElementsType.UnsignedInt, 0);
         }
 
         public override void DrawShadow (Light a_light)
         {
-            GL.BindVertexArray(m_model.VertexArrayObject);
-            // Draws the mesh
-            GL.DrawElements(BeginMode.Triangles, m_model.Indicies, DrawElementsType.UnsignedShort, 0);
+            m_model.Bind();
 
-#if DEBUG_INFO
-            Graphics.AddTriangles(m_model.Indicies, PrimitiveType.Triangles);
-#endif
+            GL.DrawElements(BeginMode.Triangles, (int)m_model.Indices, DrawElementsType.UnsignedInt, 0);
         }
 
         public MeshRenderer ()
             : base()
         {
-        }
-
-        public MeshRenderer (Model a_model, Material a_material, Graphics a_graphics)
-            : this(a_model, a_material, null, a_graphics)
-        {
-        }
-
-        public MeshRenderer (Model a_model, Material a_material, Transform a_anchor, Graphics a_graphics)
-            : base(a_material, a_anchor, a_graphics)
-        {
-            m_model = a_model;
         }
     }
 }

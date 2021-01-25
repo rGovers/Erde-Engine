@@ -8,17 +8,17 @@ namespace Erde.Physics
     {
         class EMotionState
         {
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern IntPtr MotionState_new ();
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void MotionState_delete (IntPtr a_ptr);
 
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void MotionState_setTransform (IntPtr a_ptr, float a_x, float a_y, float a_z, float a_rX, float a_rY, float a_rZ, float a_rW);
 
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern IntPtr MotionState_getTransformMatrix (IntPtr a_ptr);
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void MotionState_freeTransformMatrix (IntPtr a_matrix);
         }
 

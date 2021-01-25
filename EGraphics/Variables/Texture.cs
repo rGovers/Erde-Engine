@@ -8,9 +8,9 @@ using System.IO;
 
 namespace Erde.Graphics.Variables
 {
-    public class Texture : IGLObject, IMaterialBindable
+    public class Texture : IGraphicsObject, IMaterialBindable
     {
-        class ColorGenerator : IGLObject
+        internal class ColorGenerator : IGraphicsObject
         {
             Color   m_color;
             Texture m_texture;
@@ -48,7 +48,7 @@ namespace Erde.Graphics.Variables
             }
         }
 
-        class StreamGenerator : IGLObject
+        internal class StreamGenerator : IGraphicsObject
         {
             Stream  m_stream;
             Texture m_texture;
@@ -94,7 +94,7 @@ namespace Erde.Graphics.Variables
             }
         }
 
-        class FileGenerator : IGLObject
+        internal class FileGenerator : IGraphicsObject
         {
             IFileSystem m_fileSystem;
             string      m_filePath;
@@ -155,7 +155,7 @@ namespace Erde.Graphics.Variables
             }
         }
 
-        int                                m_texture;
+        int                                m_texture = -1;
 
         int                                m_width;
         int                                m_height;
@@ -197,6 +197,31 @@ namespace Erde.Graphics.Variables
             }
         }
 
+        Texture (Pipeline a_pipeline)
+        {
+            m_width = 0;
+            m_height = 0;
+
+            m_pixelFormat = OpenTK.Graphics.OpenGL.PixelFormat.Bgra;
+            m_pixelInternalFormat = PixelInternalFormat.Rgba;
+
+            m_pipeline = a_pipeline;
+
+            m_pipeline.AddObject(this);
+        }
+        public Texture (int a_width, int a_height, OpenTK.Graphics.OpenGL.PixelFormat a_pixelFormat, PixelInternalFormat a_pixelInternalFormat, Pipeline a_pipeline)
+        {
+            m_width = a_width;
+            m_height = a_height;
+
+            m_pipeline = a_pipeline;
+
+            m_pixelFormat = a_pixelFormat;
+            m_pixelInternalFormat = a_pixelInternalFormat;
+
+            m_pipeline.AddObject(this);
+        }
+
         public void ModifyObject ()
         {
             m_texture = GL.GenTexture();
@@ -227,7 +252,7 @@ namespace Erde.Graphics.Variables
             Tools.VerifyObjectMemoryState(this, a_state);
 #endif
 
-            m_pipeline.DisposalQueue.Enqueue(this);
+            m_pipeline.RemoveObject(this);
         }
 
         ~Texture ()
@@ -241,7 +266,7 @@ namespace Erde.Graphics.Variables
             GC.SuppressFinalize(this);
         }
 
-        public void Bind (BindableContainer a_container, Material.Binding a_binding)
+        public void Bind (BindableContainer a_container, Binding a_binding)
         {
             GL.ActiveTexture(TextureUnit.Texture0 + a_container.Textures);
             GL.BindTexture(TextureTarget.Texture2D, Handle);
@@ -257,7 +282,7 @@ namespace Erde.Graphics.Variables
         {
             Texture texture = new Texture(a_pipeline);
 
-            a_pipeline.InputQueue.Enqueue(new ColorGenerator(a_color, texture));
+            a_pipeline.AddObject(new ColorGenerator(a_color, texture));
 
             return texture;
         }
@@ -265,7 +290,7 @@ namespace Erde.Graphics.Variables
         {
             Texture texture = new Texture(a_pipeline);
 
-            a_pipeline.InputQueue.Enqueue(new StreamGenerator(a_stream, texture));
+            a_pipeline.AddObject(new StreamGenerator(a_stream, texture));
 
             return texture;
         }
@@ -273,34 +298,9 @@ namespace Erde.Graphics.Variables
         {
             Texture texture = new Texture(a_pipeline);
 
-            a_pipeline.InputQueue.Enqueue(new FileGenerator(a_filePath, a_fileSystem, texture));
+            a_pipeline.AddObject(new FileGenerator(a_filePath, a_fileSystem, texture));
 
             return texture;
-        }
-
-        Texture (Pipeline a_pipeline)
-        {
-            m_width = 0;
-            m_height = 0;
-
-            m_pixelFormat = OpenTK.Graphics.OpenGL.PixelFormat.Bgra;
-            m_pixelInternalFormat = PixelInternalFormat.Rgba;
-
-            m_pipeline = a_pipeline;
-
-            m_pipeline.InputQueue.Enqueue(this);
-        }
-        public Texture (int a_width, int a_height, OpenTK.Graphics.OpenGL.PixelFormat a_pixelFormat, PixelInternalFormat a_pixelInternalFormat, Pipeline a_pipeline)
-        {
-            m_width = a_width;
-            m_height = a_height;
-
-            m_pipeline = a_pipeline;
-
-            m_pixelFormat = a_pixelFormat;
-            m_pixelInternalFormat = a_pixelInternalFormat;
-
-            m_pipeline.InputQueue.Enqueue(this);
         }
     }
 }

@@ -8,30 +8,30 @@ namespace Erde.Physics
     {
         class BtCollisionObject
         {
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern IntPtr CollisionObject_new ();
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void CollisionObject_delete (IntPtr a_ptr);
 
 
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern bool CollisionObject_isStaticObject (IntPtr a_ptr);
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern bool CollisionObject_isKinematicObject (IntPtr a_ptr);
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern bool CollisionObject_isStaticOrKinematicObject (IntPtr a_ptr);
 
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void CollisionObject_setWorldTranslation (IntPtr a_ptr, float a_x, float a_y, float a_z);
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void CollisionObject_setWorldRotation (IntPtr a_ptr, float a_x, float a_y, float a_z, float a_w);
 
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern IntPtr CollisionObject_getTransformMatrix (IntPtr a_ptr);
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void CollisionObject_freeTransformMatrix (IntPtr a_matrix);
 
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void CollisionObject_setCollisionShape (IntPtr a_ptr, IntPtr a_collisionShape);
         }
 

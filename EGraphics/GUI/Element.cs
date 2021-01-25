@@ -344,9 +344,7 @@ namespace Erde.Graphics.GUI
         }
 
         internal virtual void Update (Vector2 a_resolution) { }
-        internal virtual void Draw (Vector2 a_resolution)
-        {
-        }
+        internal virtual void Draw (Vector2 a_resolution) { }
         internal virtual void Repaint () { }
     }
 }

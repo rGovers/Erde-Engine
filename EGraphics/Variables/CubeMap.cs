@@ -9,7 +9,8 @@ using System.IO;
 
 namespace Erde.Graphics.Variables
 {
-    public class CubeMap : IGLObject, IMaterialBindable
+    // TODO: Update and Clean
+    public class CubeMap : IGraphicsObject, IMaterialBindable
     {
         IFileSystem  m_fileSystem;
 
@@ -54,7 +55,7 @@ namespace Erde.Graphics.Variables
             m_fileSystem = a_fileSystem;
             m_pipeline = a_pipeline;
 
-            m_pipeline.InputQueue.Enqueue(this);
+            m_pipeline.AddObject(this);
         }
 
         void Dispose (bool a_state)
@@ -63,7 +64,7 @@ namespace Erde.Graphics.Variables
             Tools.VerifyObjectMemoryState(this, a_state);
 #endif
 
-            m_pipeline.DisposalQueue.Enqueue(this);
+            m_pipeline.RemoveObject(this);
         }
 
         ~CubeMap ()
@@ -77,7 +78,7 @@ namespace Erde.Graphics.Variables
             GC.SuppressFinalize(this);
         }
 
-        public void Bind (BindableContainer a_container, Material.Binding a_binding)
+        public void Bind (BindableContainer a_container, Binding a_binding)
         {
             GL.ActiveTexture(TextureUnit.Texture0 + a_container.Textures);
             GL.BindTexture(TextureTarget.TextureCubeMap, Handle);

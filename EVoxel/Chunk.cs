@@ -5,7 +5,6 @@ using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.InteropServices;
 
@@ -19,7 +18,7 @@ namespace Erde.Voxel
         Finished
     };
 
-    public class Chunk : Renderer, IGLObject
+    public class Chunk : Renderer, IGraphicsObject
     {
         [Serializable, StructLayout(LayoutKind.Sequential)]
         public struct Voxel
@@ -62,9 +61,9 @@ namespace Erde.Voxel
         [StructLayout(LayoutKind.Sequential)]
         public struct Vertex
         {
-            public Vector4 position;
-            public Vector3 normal;
-            public uint color;
+            public Vector4 Position;
+            public Vector3 Normal;
+            public uint Color;
 
             public static bool operator != (Vertex a_vertexA, Vertex a_vertexB)
             {
@@ -72,7 +71,7 @@ namespace Erde.Voxel
             }
             public static bool operator == (Vertex a_vertexA, Vertex a_vertexB)
             {
-                return a_vertexA.position == a_vertexB.position;
+                return a_vertexA.Position == a_vertexB.Position;
             }
 
             public override bool Equals (object obj)
@@ -82,22 +81,22 @@ namespace Erde.Voxel
                     return false;
                 }
 
-                var vertex = (Vertex)obj;
-                return position.Equals(vertex.position);
+                Vertex vertex = (Vertex)obj;
+                return Position.Equals(vertex.Position);
             }
             public override int GetHashCode ()
             {
-                var hashCode = -1823519222;
-                hashCode = hashCode * -1521134295 + EqualityComparer<Vector4>.Default.GetHashCode(position);
+                int hashCode = -1823519222;
+                hashCode = hashCode * -1521134295 + EqualityComparer<Vector4>.Default.GetHashCode(Position);
                 return hashCode;
             }
         }
 
-        internal class MeshGenerator : IGLObject
+        internal class MeshGenerator : IGraphicsObject
         {
             Chunk        m_voxelObject;
             List<Vertex> m_verticies;
-            List<uint>   m_indicies;
+            List<uint>   m_indices;
 
             public List<Vertex> Verticies
             {
@@ -111,7 +110,7 @@ namespace Erde.Voxel
             {
                 get
                 {
-                    return m_indicies;
+                    return m_indices;
                 }
             }
 
@@ -127,7 +126,7 @@ namespace Erde.Voxel
             {
                 m_voxelObject = a_voxelObject;
                 m_verticies = new List<Vertex>();
-                m_indicies = new List<uint>();
+                m_indices = new List<uint>();
             }
 
             public void ModifyObject ()
@@ -146,24 +145,17 @@ namespace Erde.Voxel
 
         DistanceField<Voxel> m_distanceField;
 
-        // The number of LODs that have been generated for the chunk
         byte                 m_update;
 
-        // Storage for the gpu data
-        // Stores the verticies on the gpu
         int                  m_vbo;
         int                  m_ibo;
 
-        // Stores the indicies on the gpu
         int                  m_vao;
 
-        // Stores the number of indicies in each LOD
-        uint                 m_indicies;
+        uint                 m_indices;
 
-        // Stores the gpu pipeline target
         Pipeline             m_pipeline;
 
-        // Stores the distance for frustrum culling
         float                m_radius;
 
         e_UpdateFlag         m_updateFlag;
@@ -248,11 +240,11 @@ namespace Erde.Voxel
             }
         }
 
-        public override uint Indicies
+        public override uint Indices
         {
             get
             {
-                return m_indicies;
+                return m_indices;
             }
         }
 
@@ -264,7 +256,7 @@ namespace Erde.Voxel
 
             m_update = 0;
 
-            m_pipeline.InputQueue.Enqueue(this);
+            m_pipeline.AddObject(this);
         }
 
         MeshGenerator UpdateMesh ()
@@ -277,7 +269,6 @@ namespace Erde.Voxel
             int halfHeight = height / 2;
             int halfDepth = depth / 2;
 
-            // Creates a object to store the mesh data for the gpu
             MeshGenerator gen = new MeshGenerator(this);
 
             DistanceField<Voxel>.Cell[] voxels = new DistanceField<Voxel>.Cell[8];
@@ -323,8 +314,8 @@ namespace Erde.Voxel
                 Vertex vertB = vertices[i + 1];
                 Vertex vertC = vertices[i + 2];
 
-                Vector3 v1 = vertC.position.Xyz - vertA.position.Xyz;
-                Vector3 v2 = vertB.position.Xyz - vertA.position.Xyz;
+                Vector3 v1 = vertC.Position.Xyz - vertA.Position.Xyz;
+                Vector3 v2 = vertB.Position.Xyz - vertA.Position.Xyz;
 
                 Vector3 normal = Vector3.Cross(v2, v1);
                 
@@ -332,14 +323,14 @@ namespace Erde.Voxel
                 if (values.TryGetValue(vertA, out index))
                 {
                     Vertex vertex = gen.Verticies[(int)index];
-                    vertex.normal += normal;
+                    vertex.Normal += normal;
                     gen.Verticies[(int)index] = vertex;
                     gen.Indicies.Add(index);
                 }
                 else
                 {
                     index = (uint)gen.Verticies.Count;
-                    vertA.normal = normal;
+                    vertA.Normal = normal;
                     gen.Indicies.Add(index);
                     values.Add(vertA, index);
                     gen.Verticies.Add(vertA);
@@ -347,14 +338,14 @@ namespace Erde.Voxel
                 if (values.TryGetValue(vertB, out index))
                 {
                     Vertex vertex = gen.Verticies[(int)index];
-                    vertex.normal += normal;
+                    vertex.Normal += normal;
                     gen.Verticies[(int)index] = vertex;
                     gen.Indicies.Add(index);
                 }
                 else
                 {
                     index = (uint)gen.Verticies.Count;
-                    vertB.normal = normal;
+                    vertB.Normal = normal;
                     gen.Indicies.Add(index);
                     values.Add(vertB, index);
                     gen.Verticies.Add(vertB);
@@ -362,14 +353,14 @@ namespace Erde.Voxel
                 if (values.TryGetValue(vertC, out index))
                 {
                     Vertex vertex = gen.Verticies[(int)index];
-                    vertex.normal += normal;
+                    vertex.Normal += normal;
                     gen.Verticies[(int)index] = vertex;
                     gen.Indicies.Add(index);
                 }
                 else
                 {
                     index = (uint)gen.Verticies.Count;
-                    vertC.normal = normal;
+                    vertC.Normal = normal;
                     gen.Indicies.Add(index);
                     values.Add(vertC, index);
                     gen.Verticies.Add(vertC);
@@ -380,10 +371,10 @@ namespace Erde.Voxel
             for (int i = 0; i < gen.Verticies.Count; ++i)
             {
                 Vertex vert = gen.Verticies[i];
-                vert.normal = vert.normal.Normalized();
+                vert.Normal = vert.Normal.Normalized();
                 gen.Verticies[i] = vert;
 
-                float distSqr = vert.position.LengthSquared;
+                float distSqr = vert.Position.LengthSquared;
                 if (distSqr > maxRadius)
                 {
                     maxRadius = distSqr;
@@ -393,23 +384,23 @@ namespace Erde.Voxel
             Dictionary<Vertex, uint> vertLookup = new Dictionary<Vertex, uint>();
 
             m_radius = (float)Math.Sqrt(maxRadius);
-            // Return gpu mesh data
+            
             return gen;
         }
 
         public void UpdateData ()
         {
-            m_pipeline.InputQueue.Enqueue(UpdateMesh());
+            m_pipeline.AddObject(UpdateMesh());
         }
 
         // Takes the data from UpdateMesh and sends it over to the gpu
         internal void PopulateBuffers (MeshGenerator a_generated)
         {
             // Updates the number of indicies in the mesh
-            m_indicies = (uint)a_generated.Indicies.Count;
+            m_indices = (uint)a_generated.Indicies.Count;
 
             // Checks if there is suffient indicies in the mesh
-            if (m_indicies != 0)
+            if (m_indices != 0)
             {   
                 GL.BindVertexArray(m_vao);
 
@@ -419,65 +410,51 @@ namespace Erde.Voxel
                 GL.BufferData(BufferTarget.ArrayBuffer, verticiesSize, a_generated.Verticies.ToArray(), BufferUsageHint.StaticDraw);
 
                 GL.BindBuffer(BufferTarget.ElementArrayBuffer, m_ibo);
-                int indiciesSize = (int)m_indicies * sizeof(uint);
+                int indiciesSize = (int)m_indices * sizeof(uint);
                 GL.BufferData(BufferTarget.ElementArrayBuffer, indiciesSize, a_generated.Indicies.ToArray(), BufferUsageHint.StaticDraw);
             }
         }
 
         public override void Draw (Camera a_camera)
         {
-                GL.BindVertexArray(m_vao);
+            GL.BindVertexArray(m_vao);
 
-                // Draws the mesh data
-                GL.DrawElements(PrimitiveType.Triangles, (int)m_indicies, DrawElementsType.UnsignedInt, 0);
-#if DEBUG_INFO
-                // Increments the tricount
-                // Note this will lose percision if there is any form of tessalation or culling done by the gpu
-                Graphics.AddTriangles((int)m_indicies, PrimitiveType.Triangles);
-#endif
+            GL.DrawElements(PrimitiveType.Triangles, (int)m_indices, DrawElementsType.UnsignedInt, 0);
         }
 
         public override void DrawShadow (Light a_light)
         {
             GL.BindVertexArray(m_vao);
 
-            GL.DrawElements(PrimitiveType.Triangles, (int)m_indicies, DrawElementsType.UnsignedInt, 0);
-#if DEBUG_INFO
-            // Increments the tricount
-            // Note this will lose percision if there is any form of tessalation or culling done by the gpu
-            Graphics.AddTriangles((int)m_indicies, PrimitiveType.Triangles);
-#endif
+            GL.DrawElements(PrimitiveType.Triangles, (int)m_indices, DrawElementsType.UnsignedInt, 0);
         }
 
-        // Used by the drawing thread to initiailise the object
         public void ModifyObject ()
         {
-            // Generates the Vertex Array Object, Vertex Buffer Object, and Indice Buffer Object
             m_vbo = GL.GenBuffer();
             m_ibo = GL.GenBuffer();
             m_vao = GL.GenVertexArray();
 
             GL.BindVertexArray(m_vao);
-            // Binds ibo and vbo to the vao
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, m_ibo);
             GL.BindBuffer(BufferTarget.ArrayBuffer, m_vbo);
 
-            // Sets up the vertex inputs for the shaders
             int sizeOfVertex = Marshal.SizeOf<Vertex>();
             GL.EnableVertexAttribArray(0);
             GL.EnableVertexAttribArray(1);
             GL.EnableVertexAttribArray(2);
-            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, sizeOfVertex, Marshal.OffsetOf<Vertex>("position"));
-            GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, sizeOfVertex, Marshal.OffsetOf<Vertex>("normal"));
-            GL.VertexAttribPointer(2, 4, VertexAttribPointerType.UnsignedByte, true, sizeOfVertex, Marshal.OffsetOf<Vertex>("color"));
+            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, sizeOfVertex, Marshal.OffsetOf<Vertex>("Position"));
+            GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, sizeOfVertex, Marshal.OffsetOf<Vertex>("Normal"));
+            GL.VertexAttribPointer(2, 4, VertexAttribPointerType.UnsignedByte, true, sizeOfVertex, Marshal.OffsetOf<Vertex>("Color"));
         }
 
         void Dispose (bool a_state)
         {
-            Debug.Assert(a_state, string.Format("[Warning] Resource leaked {0}", GetType().ToString()));
+#if DEBUG_INFO
+            Tools.VerifyObjectMemoryState(this, a_state);
+#endif
 
-            // Queue the destruction of the resources on the gpu
-            m_pipeline.DisposalQueue.Enqueue(this);
+            m_pipeline.RemoveObject(this);
         }
 
         ~Chunk ()
@@ -487,7 +464,6 @@ namespace Erde.Voxel
 
         public override void Dispose ()
         {
-            // Calls the Renderer dispose function
             base.Dispose();
 
             Dispose(true);

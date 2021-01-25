@@ -1,52 +1,59 @@
-﻿using OpenTK.Graphics.OpenGL;
+﻿using Erde;
+using OpenTK.Graphics.OpenGL;
 using System;
 using System.Diagnostics;
 
 namespace Erde.Graphics.Variables
 {
-    public class RenderTexture : IGLObject
+    public class RenderTexture : IGraphicsObject
     {
         int      m_bufferHandle;
 
         Texture  m_colorBuffer;
         Texture  m_depthBuffer;
 
-        int      m_width;
-        int      m_height;
-
         Pipeline m_pipeline;
 
-        struct Resize : IGLObject
+        struct Resize : IGraphicsObject
         {
-            private RenderTexture m_renderTexture;
+            RenderTexture m_renderTexture;
+
+            int           m_width;
+            int           m_height;
 
             public void ModifyObject ()
             {
-                GL.BindTexture(TextureTarget.Texture2D, m_renderTexture.ColorBuffer.Handle);
+                Texture colorBuffer = m_renderTexture.ColorBuffer;
+                GL.BindTexture(TextureTarget.Texture2D, colorBuffer.Handle);
                 GL.TexImage2D
                 (
                     TextureTarget.Texture2D,
                     0,
                     PixelInternalFormat.Rgba,
-                    m_renderTexture.Width, m_renderTexture.Height,
+                    m_width, m_height,
                     0,
                     PixelFormat.Rgba,
                     PixelType.UnsignedByte,
                     IntPtr.Zero
                 );
+                colorBuffer.Width = m_width;
+                colorBuffer.Height = m_height;
 
-                GL.BindTexture(TextureTarget.Texture2D, m_renderTexture.DepthBuffer.Handle);
+                Texture depthBuffer = m_renderTexture.DepthBuffer;
+                GL.BindTexture(TextureTarget.Texture2D, depthBuffer.Handle);
                 GL.TexImage2D
                 (
                     TextureTarget.Texture2D,
                     0,
                     PixelInternalFormat.DepthComponent,
-                    m_renderTexture.Width, m_renderTexture.Height,
+                    m_width, m_height,
                     0,
                     PixelFormat.DepthComponent,
                     PixelType.UnsignedByte,
                     IntPtr.Zero
-                );
+                );               
+                depthBuffer.Width = m_width;
+                depthBuffer.Height = m_height;
             }
 
             public void DisposeObject ()
@@ -57,9 +64,12 @@ namespace Erde.Graphics.Variables
             {
             }
 
-            public Resize (RenderTexture a_renderTexture)
+            public Resize (RenderTexture a_renderTexture, int a_width, int a_height)
             {
                 m_renderTexture = a_renderTexture;
+
+                m_width = a_width;
+                m_height = a_height;
             }
         }
 
@@ -91,7 +101,7 @@ namespace Erde.Graphics.Variables
         {
             get
             {
-                return m_width;
+                return m_colorBuffer.Width;
             }
         }
 
@@ -99,7 +109,7 @@ namespace Erde.Graphics.Variables
         {
             get
             {
-                return m_height;
+                return m_colorBuffer.Height;
             }
         }
 
@@ -108,19 +118,14 @@ namespace Erde.Graphics.Variables
             m_colorBuffer = new Texture(a_width, a_height, a_pixelFormat, a_pixelInternalFormat, a_pipeline);
             m_depthBuffer = new Texture(a_width, a_height, PixelFormat.DepthComponent, PixelInternalFormat.DepthComponent, a_pipeline);
 
-            m_width = a_width;
-            m_height = a_height;
             m_pipeline = a_pipeline;
 
-            m_pipeline.InputQueue.Enqueue(this);
+            m_pipeline.AddObject(this);
         }
 
         public void ResizeTexture (int a_width, int a_height)
         {
-            m_width = a_width;
-            m_height = a_height;
-
-            m_pipeline.InputQueue.Enqueue(new Resize(this));
+            m_pipeline.AddObject(new Resize(this, a_width, a_height));
         }
 
         public void ModifyObject ()
@@ -146,11 +151,13 @@ namespace Erde.Graphics.Variables
             );
         }
 
-        private void Dispose (bool a_state)
+        void Dispose (bool a_state)
         {
-            Debug.Assert(a_state, string.Format("[Warning] Resource leaked {0}", GetType().ToString()));
+#if DEBUG_INFO
+            Tools.VerifyObjectMemoryState(this, a_state);
+#endif
 
-            m_pipeline.DisposalQueue.Enqueue(this);
+            m_pipeline.RemoveObject(this);
 
             m_colorBuffer.Dispose();
             m_depthBuffer.Dispose();

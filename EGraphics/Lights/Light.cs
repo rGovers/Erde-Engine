@@ -1,5 +1,6 @@
 ﻿using Erde.Graphics.Shader;
 using OpenTK;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 
@@ -64,6 +65,18 @@ namespace Erde.Graphics.Lights
             }
         }
 
+        public Color Color
+        {
+            get
+            {
+                return m_color;
+            }
+            set
+            {
+                m_color = value;
+            }
+        }
+
         public Light (bool a_shadowMap)
         {
             m_shadowMap = a_shadowMap;
@@ -80,16 +93,29 @@ namespace Erde.Graphics.Lights
             }
         }
 
-        public Color Color
+        void Dispose (bool a_state)
         {
-            get
+#if DEBUG
+            Tools.VerifyObjectMemoryState(this, a_state);
+#endif
+
+            lock (m_lights)
             {
-                return m_color;
+                m_lights.Remove(this);
             }
-            set
-            {
-                m_color = value;
-            }
+        }
+
+        ~Light()
+        {
+            Dispose(false);
+        }
+
+        public override void Dispose()
+        {
+            base.Dispose();
+
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         public abstract void BindShadowMap (BindableContainer a_bindableContainer);

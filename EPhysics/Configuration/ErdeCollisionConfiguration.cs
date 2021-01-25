@@ -7,9 +7,9 @@ namespace Erde.Physics.Configuration
     {
         class ECollisionConfiguration
         {
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern IntPtr ECollisionConfiguration_new ();
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void ECollisionConfiguration_delete (IntPtr a_ptr);
         }
 

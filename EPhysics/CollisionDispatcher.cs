@@ -8,9 +8,9 @@ namespace Erde.Physics
     {
         class BtCollisionDispatcher
         {
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern IntPtr CollisionDispatcher_new (IntPtr a_collisionConfiguration);
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void CollisionDispatcher_delete (IntPtr a_ptr);
         }
 

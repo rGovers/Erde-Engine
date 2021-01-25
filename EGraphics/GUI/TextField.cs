@@ -28,7 +28,7 @@ namespace Erde.Graphics.GUI
         {
             m_pipeline = a_pipeline;
 
-            a_pipeline.Window.KeyPress += Window_KeyPress;
+            // a_pipeline.Window.KeyPress += Window_KeyPress;
 
             Click += Focus;
 
@@ -37,7 +37,7 @@ namespace Erde.Graphics.GUI
                 '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=',
                 '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+',
                 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\\',
-                'Q', 'W', 'E','R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '|',
+                'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '|',
                 'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'',
                 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"',
                 'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/',
@@ -120,7 +120,7 @@ namespace Erde.Graphics.GUI
             Tools.VerifyObjectMemoryState(this, a_state);
 #endif
 
-            m_pipeline.Window.KeyPress -= Window_KeyPress;
+            // m_pipeline.Window.KeyPress -= Window_KeyPress;
         }
 
         ~TextField ()
@@ -128,7 +128,7 @@ namespace Erde.Graphics.GUI
             Dispose(false);
         }
 
-        public new void Dispose ()
+        public override void Dispose ()
         {
             base.Dispose();
 

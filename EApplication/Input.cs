@@ -1,6 +1,7 @@
 ﻿using OpenTK;
 using OpenTK.Input;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -8,7 +9,7 @@ namespace Erde.Application
 {
     public class Input
     {
-        static Input      m_input;
+        static Input      Instance;
 
         KeyboardState     m_keyboardState;
         KeyboardState     m_prevKeyboardState;
@@ -23,6 +24,10 @@ namespace Erde.Application
 
         internal Input (Application a_application)
         {
+            Debug.Assert(Instance == null);
+
+            Instance = this;
+
             m_keyboardState = Keyboard.GetState();
             m_prevKeyboardState = Keyboard.GetState();
 
@@ -33,11 +38,6 @@ namespace Erde.Application
             m_blockedMouseButtons = new List<MouseButton>();
 
             m_application = a_application;
-
-            if (m_input == null)
-            {
-                m_input = this;
-            }
         }
 
         internal void Update ()
@@ -75,22 +75,22 @@ namespace Erde.Application
 
         public static void BlockKey (Key a_key)
         {
-            if (!m_input.m_blockedKeys.Contains(a_key))
+            if (!Instance.m_blockedKeys.Contains(a_key))
             {
-                m_input.m_blockedKeys.Add(a_key);
+                Instance.m_blockedKeys.Add(a_key);
             }
         }
         public static void BlockButton (MouseButton a_button)
         {
-            if (!m_input.m_blockedMouseButtons.Contains(a_button))
+            if (!Instance.m_blockedMouseButtons.Contains(a_button))
             {
-                m_input.m_blockedMouseButtons.Add(a_button);
+                Instance.m_blockedMouseButtons.Add(a_button);
             }
         }
 
         public static bool IsMousePressed (MouseButton a_button)
         {
-            foreach (MouseButton mouseButton in m_input.m_blockedMouseButtons)
+            foreach (MouseButton mouseButton in Instance.m_blockedMouseButtons)
             {
                 if (mouseButton == a_button)
                 {
@@ -98,11 +98,11 @@ namespace Erde.Application
                 }
             }
 
-            return m_input.m_mouseState.IsButtonDown(a_button) && m_input.m_prevMouseState.IsButtonUp(a_button);
+            return Instance.m_mouseState.IsButtonDown(a_button) && Instance.m_prevMouseState.IsButtonUp(a_button);
         }
         public static bool IsMouseReleased (MouseButton a_button)
         {
-            foreach (MouseButton mouseButton in m_input.m_blockedMouseButtons)
+            foreach (MouseButton mouseButton in Instance.m_blockedMouseButtons)
             {
                 if (mouseButton == a_button)
                 {
@@ -110,11 +110,11 @@ namespace Erde.Application
                 }
             }
 
-            return m_input.m_mouseState.IsButtonUp(a_button) && m_input.m_prevMouseState.IsButtonDown(a_button);
+            return Instance.m_mouseState.IsButtonUp(a_button) && Instance.m_prevMouseState.IsButtonDown(a_button);
         }
         public static bool IsMouseDown (MouseButton a_button)
         {
-            foreach (MouseButton mouseButton in m_input.m_blockedMouseButtons)
+            foreach (MouseButton mouseButton in Instance.m_blockedMouseButtons)
             {
                 if (mouseButton == a_button)
                 {
@@ -122,11 +122,11 @@ namespace Erde.Application
                 }
             }
 
-            return m_input.m_mouseState.IsButtonDown(a_button);
+            return Instance.m_mouseState.IsButtonDown(a_button);
         }
         public static bool IsMouseUp (MouseButton a_button)
         {
-            foreach (MouseButton mouseButton in m_input.m_blockedMouseButtons)
+            foreach (MouseButton mouseButton in Instance.m_blockedMouseButtons)
             {
                 if (mouseButton == a_button)
                 {
@@ -134,21 +134,21 @@ namespace Erde.Application
                 }
             }
 
-            return m_input.m_mouseState.IsButtonUp(a_button);
+            return Instance.m_mouseState.IsButtonUp(a_button);
         }
 
         public static Vector2 GetCursorPosition ()
         {
             Point point = Cursor.Position;
 
-            point = m_input.m_application.PointToClient(point);
+            Vector2 cPoint = Instance.m_application.PointToClient(new Vector2(point.X, point.Y));
 
-            return new Vector2(point.X, m_input.m_application.Height - point.Y);
+            return new Vector2(cPoint.X, Instance.m_application.Height - cPoint.Y);
         }
 
         public static bool IsKeyReleased (Key a_key)
         {
-            foreach (Key key in m_input.m_blockedKeys)
+            foreach (Key key in Instance.m_blockedKeys)
             {
                 if (key == a_key)
                 {
@@ -156,11 +156,11 @@ namespace Erde.Application
                 }
             }
 
-            return m_input.m_keyboardState.IsKeyUp(a_key) && m_input.m_prevKeyboardState.IsKeyDown(a_key);
+            return Instance.m_keyboardState.IsKeyUp(a_key) && Instance.m_prevKeyboardState.IsKeyDown(a_key);
         }
         public static bool IsKeyPressed (Key a_key)
         {
-            foreach (Key key in m_input.m_blockedKeys)
+            foreach (Key key in Instance.m_blockedKeys)
             {
                 if (key == a_key)
                 {
@@ -168,11 +168,11 @@ namespace Erde.Application
                 }
             }
 
-            return m_input.m_keyboardState.IsKeyDown(a_key) && m_input.m_prevKeyboardState.IsKeyUp(a_key);
+            return Instance.m_keyboardState.IsKeyDown(a_key) && Instance.m_prevKeyboardState.IsKeyUp(a_key);
         }
         public static bool IsKeyDown (Key a_key)
         {
-            foreach (Key key in m_input.m_blockedKeys)
+            foreach (Key key in Instance.m_blockedKeys)
             {
                 if (key == a_key)
                 {
@@ -180,11 +180,11 @@ namespace Erde.Application
                 }
             }
 
-            return m_input.m_keyboardState.IsKeyDown(a_key);
+            return Instance.m_keyboardState.IsKeyDown(a_key);
         }
         public static bool IsKeyUp (Key a_key)
         {
-            foreach (Key key in m_input.m_blockedKeys)
+            foreach (Key key in Instance.m_blockedKeys)
             {
                 if (key == a_key)
                 {
@@ -192,7 +192,7 @@ namespace Erde.Application
                 }
             }
 
-            return m_input.m_keyboardState.IsKeyUp(a_key);
+            return Instance.m_keyboardState.IsKeyUp(a_key);
         }
     }
 }

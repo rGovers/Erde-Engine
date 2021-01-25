@@ -34,6 +34,6 @@ namespace Erde.Graphics
 
     public interface IMaterialBindable
     {
-        void Bind (BindableContainer a_container, Material.Binding a_binding);
+        void Bind (BindableContainer a_container, Binding a_binding);
     }
 }

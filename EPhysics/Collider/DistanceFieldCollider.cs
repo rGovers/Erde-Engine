@@ -7,9 +7,9 @@ namespace Erde.Physics.Collider
     {
         class EDistanceFieldCollider
         {
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern IntPtr DistanceFieldCollider_new (IntPtr a_distanceField, int a_stride, int a_width, int a_height, int a_depth, float a_spacing);
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void DistanceFieldCollider_delete (IntPtr a_ptr);
         }
 

@@ -11,50 +11,37 @@ namespace Erde.Voxel
 {
     public class VoxelManager : IDisposable
     {
-        // Stores the chunks that are being used by the program
-        // The key is the position of the chunk on the grid
-        ConcurrentDictionary<Vector3, Chunk> m_chunks;
 
-        // The thread that the [this] is running on
+        ConcurrentDictionary<Vector3, Chunk> m_chunkLookup;
+
         Thread                               m_voxelThread;
 
-        // The number of voxels in a chunk cbrt
+
         int                                  m_voxelWidth;
 
         int                                  m_stackSize;
 
-        // The spacing between each voxel
+
         float                                m_voxelSize;
 
-        // How many chunk itterations from the loading position should be loaded
         int                                  m_scanDistance;
 
-        // How far away from the loading position a chunk can get before it is destroyed
         float                                m_destroyDistance;
 
-        // Threading shutdown variables
         bool                                 m_shutDown;
-
         bool                                 m_join;
 
-        // The material the chunks shold use to draw with
         Material                             m_material;
 
-        // The GPU pipeline the chunks should use
         Pipeline                             m_pipeline;
-
-        // The drawing object the chunks should use
         Graphics.Graphics                    m_graphics;
 
-        // Where loading should be centred around
         Vector2                              m_loadPos;
 
-        // The object that is in charge of generating the world
         IGenerator                           m_worldGenerator;
 
         IFileSystem                          m_fileSystem;
 
-        // Should the chunk thread save
         bool                                 m_save;
 
         bool                                 m_threaded;
@@ -67,7 +54,7 @@ namespace Erde.Voxel
         {
             get
             {
-                return m_chunks;
+                return m_chunkLookup;
             }
         }
 
@@ -192,7 +179,7 @@ namespace Erde.Voxel
 
         VoxelManager ()
         {
-            m_chunks = new ConcurrentDictionary<Vector3, Chunk>();
+            m_chunkLookup = new ConcurrentDictionary<Vector3, Chunk>();
 
             m_shutDown = false;
 
@@ -300,7 +287,7 @@ namespace Erde.Voxel
 
             chunk.UpdateFlag = e_UpdateFlag.Pending;
 
-            m_chunks.TryAdd(a_position, chunk);
+            m_chunkLookup.TryAdd(a_position, chunk);
         }
 
         bool VoxelObjectComp (Vector2 a_keyPos)
@@ -309,7 +296,7 @@ namespace Erde.Voxel
             {
                 Vector3 pos = new Vector3(a_keyPos.X, i, a_keyPos.Y);
 
-                if (!m_chunks.ContainsKey(pos))
+                if (!m_chunkLookup.ContainsKey(pos))
                 {
                     AddVoxelObject(pos);
 
@@ -456,7 +443,6 @@ namespace Erde.Voxel
                     string fileName = "obj/" + GetFileName(a_chunk);
 
                     DistanceField<Chunk.Voxel> distance = a_chunk.DistanceField;
-                    // Work around for issues getting the size of generics
                     int size = DistanceField<Chunk.Voxel>.Cell.DataSize;
                     int len = distance.Cells.Length;
 
@@ -493,7 +479,7 @@ namespace Erde.Voxel
             a_chunk.Transform.Translation = Vector3.One * float.PositiveInfinity;
 
             Chunk temp = null;
-            m_chunks.TryRemove(key, out temp);
+            m_chunkLookup.TryRemove(key, out temp);
 
             a_chunk.GameObject.Dispose();
         }
@@ -528,7 +514,7 @@ namespace Erde.Voxel
 
         bool VoxelUpdate ()
         {
-            ICollection<Chunk> vals = m_chunks.Values;
+            ICollection<Chunk> vals = m_chunkLookup.Values;
 
             bool fnd = false;
 
@@ -564,7 +550,7 @@ namespace Erde.Voxel
                 {
                     SaveManager();
 
-                    foreach (Chunk vox in m_chunks.Values)
+                    foreach (Chunk vox in m_chunkLookup.Values)
                     {
                         SaveObject(vox);
                     }
@@ -578,7 +564,7 @@ namespace Erde.Voxel
 
         public void ClearAll ()
         {
-            foreach (Chunk chunk in m_chunks.Values)
+            foreach (Chunk chunk in m_chunkLookup.Values)
             {
                 RemoveObject(chunk);
             }
@@ -779,9 +765,9 @@ namespace Erde.Voxel
 
             Vector3 chunkIndex = new Vector3((float)Math.Floor(x / (float)gridDepth), (float)Math.Floor(y / (float)gridDepth), (float)Math.Floor(z / (float)gridDepth));
 
-            if (m_chunks.ContainsKey(chunkIndex))
+            if (m_chunkLookup.ContainsKey(chunkIndex))
             {
-                return m_chunks[chunkIndex];
+                return m_chunkLookup[chunkIndex];
             }
 
             return null;
@@ -792,9 +778,9 @@ namespace Erde.Voxel
             int x, y, z;
             SnapToVoxelGrid(a_position, out chunkIndex, out x, out y, out z);
 
-            if (m_chunks.ContainsKey(chunkIndex))
+            if (m_chunkLookup.ContainsKey(chunkIndex))
             {
-                return m_chunks[chunkIndex].DistanceField.GetCell(x, y, z).Distance;
+                return m_chunkLookup[chunkIndex].DistanceField.GetCell(x, y, z).Distance;
             }
 
             return float.NaN;
@@ -809,20 +795,16 @@ namespace Erde.Voxel
 
             int chunkSize = gridDepth - 1;
 
-            // Moves the voxel space
             int x = (int)(a_position.X / voxelSize) + halfDepth;
             int y = (int)(a_position.Y / voxelSize) + halfDepth;
             int z = (int)(a_position.Z / voxelSize) + halfDepth;
 
-            // Moves to chunk space
             a_chunkIndex = new Vector3((float)Math.Floor(x / (float)gridDepth), (float)Math.Floor(y / (float)gridDepth), (float)Math.Floor(z / (float)gridDepth));
 
-            // Correction for negative coordinates
             int xMulti = (int)-Math.Ceiling((Math.Sign(x) - 1) / 2.0);
             int yMulti = (int)-Math.Ceiling((Math.Sign(y) - 1) / 2.0);
             int zMulti = (int)-Math.Ceiling((Math.Sign(z) - 1) / 2.0);
 
-            // Moves the local voxel space
             a_x = (xMulti * chunkSize) + (x % gridDepth);
             a_y = (yMulti * chunkSize) + (y % gridDepth);
             a_z = (zMulti * chunkSize) + (z % gridDepth);

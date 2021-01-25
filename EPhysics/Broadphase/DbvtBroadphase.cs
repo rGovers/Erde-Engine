@@ -7,9 +7,9 @@ namespace Erde.Physics.Broadphase
     {
         class BtDvbtBroadphase
         {
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern IntPtr DbvtBroadphase_new ();
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void DbvtBroadphaser_delete (IntPtr a_ptr);
         }
 

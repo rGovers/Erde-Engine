@@ -1,28 +1,34 @@
-﻿namespace Erde.Graphics.Shader
+﻿using Erde.Graphics.Variables;
+
+namespace Erde.Graphics.Shader
 {
     internal class Shaders
     {
         public const string DEFFERED_PIXEL = @"
-#version 410
+#version 450
 
-in vec2 vUV;
+#extension GL_ARB_separate_shader_objects : enable
 
-out vec4 fragColor;
+layout(location = 0) in vec2 vUV;
 
-uniform sampler2D diffuse;
+layout(location = 0) out vec4 fragColor;
+
+layout(location = 1) uniform sampler2D diffuse;
 
 void main()
 {
     fragColor = texture(diffuse, vUV);
 }";
         public const string DEFFERED_PIXEL_INVERTED = @"
-#version 410
+#version 450
 
-in vec2 vUV;
+#extension GL_ARB_separate_shader_objects : enable
 
-out vec4 fragColor;
+layout(location = 0) in vec2 vUV;
 
-uniform sampler2D diffuse;
+layout(location = 0) out vec4 fragColor;
+
+layout(location = 1) uniform sampler2D diffuse;
 
 void main()
 {
@@ -30,22 +36,25 @@ void main()
 }";
 
         public const string DIRECTIONAL_VERTEX = @"
-#version 410
+#version 450
+
+#extension GL_ARB_separate_shader_objects : enable
 
 layout(location = 0) in vec4 position;
 
-uniform mat4 lvp;
-
-uniform mat4 world;
+layout(location = 0) uniform mat4 lvp;
+layout(location = 1) uniform mat4 world;
 
 void main()
 {
     gl_Position = lvp * world * position;
 }";
         public const string QUAD_VERTEX = @"
-#version 410
+#version 450
 
-out vec2 vUV;
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(location = 0) out vec2 vUV;
 
 void main()
 {
@@ -55,11 +64,13 @@ void main()
 }";
 
         public const string QUAD_TRANSFORM_VERTEX = @"
-#version 410
+#version 450
 
-uniform mat4 transform;
+#extension GL_ARB_separate_shader_objects : enable
 
-out vec2 vUV;
+layout(location = 0) uniform mat4 transform;
+
+layout(location = 0) out vec2 vUV;
 
 void main()
 {
@@ -67,8 +78,7 @@ void main()
     vec4 pos = transform * vec4(tran.x * 2 - 1, tran.y * 2 - 1, 0, 1);
     gl_Position = vec4(pos.xyz, 1);
     vUV = tran;
-}
-        ";
+}";
 
         public static Program TRANSFORM_IMAGE_SHADER;
         public static Program TRANSFORM_IMAGE_SHADER_INVERTED;
@@ -79,8 +89,8 @@ void main()
             PixelShader pixelShaderInverted = new PixelShader(DEFFERED_PIXEL_INVERTED, a_pipeline);
             VertexShader vertexShader = new VertexShader(QUAD_TRANSFORM_VERTEX, a_pipeline);
 
-            TRANSFORM_IMAGE_SHADER = new Program(pixelShader, vertexShader, a_pipeline);
-            TRANSFORM_IMAGE_SHADER_INVERTED = new Program(pixelShaderInverted, vertexShader, a_pipeline);
+            TRANSFORM_IMAGE_SHADER = new Program(pixelShader, vertexShader, null, 0, false, a_pipeline);
+            TRANSFORM_IMAGE_SHADER_INVERTED = new Program(pixelShaderInverted, vertexShader, null, 0, false, a_pipeline);
 
             Pipeline.GLError("Init Shaders: ");
 

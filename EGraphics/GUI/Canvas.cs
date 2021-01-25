@@ -12,7 +12,7 @@ using System.Xml;
 
 namespace Erde.Graphics.GUI
 {
-    public class Canvas : IGLObject
+    public class Canvas : IGraphicsObject
     {
         string                      m_name;
 
@@ -379,7 +379,7 @@ namespace Erde.Graphics.GUI
 
             if (canvas != null)
             {
-                a_pipeline.InputQueue.Enqueue(canvas);
+                a_pipeline.AddObject(canvas);
             }
 
             return canvas;
@@ -657,7 +657,7 @@ namespace Erde.Graphics.GUI
                 }
             }
 
-            m_pipeline.DisposalQueue.Enqueue(this);
+            m_pipeline.RemoveObject(this);
         }
         ~Canvas ()
         {

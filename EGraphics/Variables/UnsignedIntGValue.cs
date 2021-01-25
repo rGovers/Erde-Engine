@@ -19,7 +19,7 @@ namespace Erde.Graphics.Variables
             }
         }
 
-        public void Bind (BindableContainer a_container, Material.Binding a_binding)
+        public void Bind (BindableContainer a_container, Binding a_binding)
         {
             if (a_binding.Handle != -1)
             {

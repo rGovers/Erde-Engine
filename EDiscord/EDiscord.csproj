@@ -46,38 +46,42 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DiscordClient.cs" />
+    <Compile Include="Client\InternalClient.cs" />
+    <Compile Include="Client\UnixClient.cs" />
+    <Compile Include="Client\WindowsClient.cs" />
     <Compile Include="Commands\CloseCommand.cs" />
     <Compile Include="Commands\ICommand.cs" />
     <Compile Include="Commands\PresenceCommand.cs" />
     <Compile Include="Configuration.cs" />
+    <Compile Include="DiscordClient.cs" />
     <Compile Include="EnumConverter.cs" />
     <Compile Include="Frame.cs" />
     <Compile Include="Handshake.cs" />
     <Compile Include="Message\CloseMessage.cs" />
     <Compile Include="Message\ConnectionEstablishedMessage.cs" />
     <Compile Include="Message\ErrorMessage.cs" />
+    <Compile Include="Message\IMessage.cs" />
     <Compile Include="Message\ReadyMessage.cs" />
     <Compile Include="Payload\ArgumentPayload.cs" />
     <Compile Include="Payload\ClosePayload.cs" />
     <Compile Include="Payload\EventPayload.cs" />
     <Compile Include="Payload\IPayload.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RichPresence\Assets.cs" />
     <Compile Include="RichPresence\Party.cs" />
     <Compile Include="RichPresence\RichPresence.cs" />
     <Compile Include="RichPresence\Secret.cs" />
     <Compile Include="RichPresence\TimeStamp.cs" />
+    <Compile Include="UnixEndPoint.cs" />
     <Compile Include="User.cs" />
-    <Compile Include="Message\IMessage.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\EBase\EBase.csproj">

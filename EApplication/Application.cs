@@ -1,22 +1,77 @@
-﻿using OpenTK;
-using OpenTK.Graphics;
+﻿using Erde.Application.Internal;
+using OpenTK;
 using OpenTK.Input;
 using System;
+using System.Diagnostics;
 using System.Threading;
 
 namespace Erde.Application
 {
-    public class Application : NativeWindow
+    public enum e_ApplicationType
+    {
+        Managed,
+        Native
+    }
+
+    public enum e_WindowFlags
+    {
+        Default,
+        FixedWindow,
+        Fullscreen
+    }
+
+    public enum e_WindowState
+    {
+        Fullscreen,
+        Maximized,
+        Minimized,
+        Normal
+    }
+
+    public class Application : IDisposable
     {
         public delegate void UpdateCycle ();
+        public delegate void Event();
 
+        static Application Instance = null;
+        
         bool               m_shutdown;
 
-        static Application m_application = null;
-
         UpdateCycle        m_update;
+        Event              m_closing;
+        Event              m_resize;
 
         Input              m_input;
+
+        IApplication       m_internalApplication;
+
+        string             m_title;
+
+        e_ApplicationType  m_applicationType;
+
+        public string Title
+        {
+            get
+            {
+                return m_title;
+            }
+        }
+
+        public e_ApplicationType ApplicationType
+        {
+            get
+            {
+                return m_applicationType;
+            }
+        }
+
+        public IApplication InternalApplication
+        {
+            get
+            {
+                return m_internalApplication;
+            }
+        }
 
         public UpdateCycle Update
         {
@@ -30,58 +85,145 @@ namespace Erde.Application
             }
         }
 
+        public Event Closing
+        {
+            get
+            {
+                return m_closing;
+            }
+            set
+            {
+                m_closing = value;
+            }
+        }
+        public Event Resize
+        {
+            get
+            {
+                return m_resize;
+            }
+            set
+            {
+                m_resize = value;
+            }
+        }
+
         public static Application Active
         {
             get
             {
-                return m_application;
+                return Instance;
             }
         }
 
-        // Creates the window
-        public Application (string a_title, GameWindowFlags a_displayMode)
-            : base(DisplayDevice.Default.Width / 2, DisplayDevice.Default.Height / 2, a_title, a_displayMode, GraphicsMode.Default, DisplayDevice.Default)
+        public int Width
         {
-            WindowState = WindowState.Normal;
-            // Fixes window drawing issues on Linux
-            Visible = true;
+            get
+            {
+                return m_internalApplication.Width;
+            }
+        }
+        public int Height
+        {
+            get
+            {
+                return m_internalApplication.Height;
+            }
+        }
 
-            // Fixes wierd bug with cursor being seen as visible and invisible
-            CursorVisible = true;
+        public void ResizeWindow(Vector2 a_size)
+        {
+            m_internalApplication.ResizeWindow(a_size);
+        }
+
+        public Application (string a_title, e_WindowFlags a_displayMode, e_ApplicationType a_applicationType = e_ApplicationType.Managed)
+        {
+            Debug.Assert(Instance == null);
+            Instance = this;
+
+            m_title = a_title;
+
+            m_applicationType = a_applicationType;
+
+            switch (m_applicationType)
+            {
+                case e_ApplicationType.Managed:
+                {
+                    GameWindowFlags flags = GameWindowFlags.Default;
+
+                    switch (a_displayMode)
+                    {
+                        case e_WindowFlags.FixedWindow:
+                        {
+                            flags = GameWindowFlags.FixedWindow;
+
+                            break;
+                        }
+                        case e_WindowFlags.Fullscreen:
+                        {
+                            flags = GameWindowFlags.Fullscreen;
+
+                            break;
+                        }
+                    }
+
+                    m_internalApplication = new OpenTKApplication(this, a_title, flags);
+
+                    break;
+                }
+                case e_ApplicationType.Native:
+                {
+                    m_internalApplication = new NativeApplication(this, a_title, a_displayMode);
+
+                    break;
+                }
+            }
 
             m_shutdown = false;
 
             Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
 
-            if (m_application == null)
-            {
-                m_application = this;
-            }
-
             m_input = new Input(this);
         }
 
-        void Application_Closing (object sender, EventArgs e)
+        internal void ResizeWindowEvent(object a_sender, EventArgs a_e)
+        {
+            if (m_resize != null)
+            {
+                m_resize();
+            }
+        }
+        internal void CloseWindowEvent (object a_sender, EventArgs a_e)
         {
             m_shutdown = true;
+
+            if (m_closing != null)
+            {
+                m_closing();
+            }
         }
 
-        public void SetActive ()
+        public void Close()
         {
-            m_application = this;
+            m_shutdown = true;
+
+            m_internalApplication.Close();
+        }
+
+        public Vector2 PointToClient(Vector2 a_point)
+        {
+            return m_internalApplication.PointToClient(a_point);
         }
 
         public void Run ()
         {
-            Closing += Application_Closing;
-
             Time time = new Time();
 
-            while (Exists && !m_shutdown)
+            while (m_internalApplication.WindowExists && !m_shutdown)
             {
                 time.Update();
 
-                if (WindowState != WindowState.Minimized)
+                if (m_internalApplication.State != e_WindowState.Minimized)
                 {
                     m_input.Update();
 
@@ -109,11 +251,16 @@ namespace Erde.Application
                 }
                 else
                 {
-                    Thread.Sleep(100);
+                    Thread.Yield();
                 }
 
-                ProcessEvents();
+                m_internalApplication.Update();
             }
+        }
+
+        public void Dispose()
+        {
+            m_internalApplication.Dispose();
         }
     }
 }

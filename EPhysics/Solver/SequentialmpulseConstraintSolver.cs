@@ -7,9 +7,9 @@ namespace Erde.Physics.Solver
     {
         class BtSequentialImpulseConstraintSolver
         {
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern IntPtr SequentialImpulseConstraintSolver_new ();
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void SequentialImpulseConstraintSolver_delete (IntPtr a_ptr);
         }
 

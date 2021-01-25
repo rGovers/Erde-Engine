@@ -1,41 +1,43 @@
-﻿using OpenTK.Graphics.OpenGL;
+﻿using Erde.Application;
+using Erde.Graphics.Internal.Shader;
 using System;
-using System.Diagnostics;
 
 namespace Erde.Graphics.Shader
 {
-    public class PixelShader : IGLObject
+    public class PixelShader : IGraphicsObject
     {
-        Pipeline m_pipeline;
+        IGraphicsObject m_internalObject;
 
-        int      m_shader;
-        string   m_source;
+        Pipeline        m_pipeline;
 
-        internal int Handle
+        public IGraphicsObject InternalObject
         {
             get
             {
-                return m_shader;
-            }
-        }
-
-        public string Source
-        {
-            get
-            {
-                return m_source;
+                return m_internalObject;
             }
         }
 
         public PixelShader (string a_source, Pipeline a_pipeline)
         {
-            m_source = a_source;
-
             m_pipeline = a_pipeline;
+            
+            if (m_pipeline.ApplicationType == e_ApplicationType.Managed)
+            {
+                m_internalObject = new OpenTKPixelShader(a_source, m_pipeline);
+            }
+            else
+            {
+                m_internalObject = new NativePixelShader(a_source, m_pipeline);
+            }
 
-            m_pipeline.InputQueue.Enqueue(this);
+            m_pipeline.AddObject(this);
         }
-        // public PixelShader (string a_filename, AssetManager a_assetManager, Pipeline a_pipeline) : this(Program.LoadSource(a_filename, a_assetManager), a_pipeline) { }
+
+        public void ModifyObject ()
+        {
+            m_internalObject.ModifyObject();
+        }
 
         void Dispose (bool a_state)
         {
@@ -43,7 +45,9 @@ namespace Erde.Graphics.Shader
             Tools.VerifyObjectMemoryState(this, a_state);
 #endif
 
-            m_pipeline.InputQueue.Enqueue(this);
+            m_pipeline.RemoveObject(this);
+
+            m_internalObject.Dispose();
         }
 
         ~PixelShader ()
@@ -54,27 +58,13 @@ namespace Erde.Graphics.Shader
         public void Dispose ()
         {
             Dispose(true);
+
             GC.SuppressFinalize(this);
-        }
-
-        public void ModifyObject ()
-        {
-            m_shader = GL.CreateShader(ShaderType.FragmentShader);
-            GL.ShaderSource(m_shader, m_source);
-            GL.CompileShader(m_shader);
-#if DEBUG_INFO
-            string info = GL.GetShaderInfoLog(m_shader);
-
-            if (info != string.Empty)
-            {
-                InternalConsole.AddMessage(info, InternalConsole.e_Alert.Warning);
-            }
-#endif
         }
 
         public void DisposeObject ()
         {
-            GL.DeleteShader(m_shader);
+            m_internalObject.DisposeObject();
         }
     }
 }

@@ -1,3 +1,4 @@
+using Erde.Graphics.Shader;
 using Erde.Graphics.Variables;
 using Erde.IO;
 using OpenTK;
@@ -181,6 +182,13 @@ namespace Erde.Graphics.GUI
 
         void UpdateString ()
         {
+            int handle = m_texture.Handle;
+
+            if (handle == -1)
+            {
+                return;
+            }
+
             int width = m_texture.Width;
             int height = m_texture.Height;
 
@@ -193,22 +201,11 @@ namespace Erde.Graphics.GUI
             graphics.DrawString(m_text, m_font, m_brush, 0.0f, 0.0f);
             graphics.Flush();
 
-            int handle = m_texture.Handle;
-
-            GL.BindTexture(TextureTarget.Texture2D, handle);
-
             BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height),
             ImageLockMode.ReadOnly,
             System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
-            GL.TexImage2D(TextureTarget.Texture2D,
-            0,
-            PixelInternalFormat.Rgba,
-            width, height,
-            0,
-            OpenTK.Graphics.OpenGL.PixelFormat.Bgra,
-            PixelType.UnsignedByte,
-            data.Scan0);
+            GraphicsCommand.UpdateTextureRGBA(m_texture, data.Scan0);
 
             bitmap.UnlockBits(data);
 
@@ -232,7 +229,14 @@ namespace Erde.Graphics.GUI
             CalculateTrueTransform();
             Matrix4 transform = ToMatrix(a_resolution);
 
-            GLCommand.Blit(m_texture, transform, true);
+            Program program = Shaders.TRANSFORM_IMAGE_SHADER_INVERTED;
+
+            GraphicsCommand.BindProgram(program);
+
+            GraphicsCommand.BindMatrix4(program, 0, transform);
+            GraphicsCommand.BindTexture(program, 1, m_texture, 0);
+
+            GraphicsCommand.Draw();
         }
 
         void Dispose (bool a_state)
@@ -244,7 +248,7 @@ namespace Erde.Graphics.GUI
             m_texture.Dispose();
         }
 
-        public void Dispose ()
+        public virtual void Dispose ()
         {
             Dispose(true);
             GC.SuppressFinalize(this);

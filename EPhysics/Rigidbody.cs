@@ -8,32 +8,32 @@ namespace Erde.Physics
     {
         class BtRigidbody
         {
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern IntPtr Rigidbody_new (float a_mass, IntPtr a_motionState, IntPtr a_collisionShape);
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void Rigidbody_delete (IntPtr a_ptr);
 
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void Rigidbody_setMass (IntPtr a_ptr, float a_mass);
 
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void Rigidbody_getForce (IntPtr a_ptr, out float a_x, out float a_y, out float a_z);
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void Rigidbody_getTorque (IntPtr a_ptr, out float a_x, out float a_y, out float a_z);
 
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void Rigidbody_applyForce (IntPtr a_ptr, float a_vX, float a_vY, float a_vZ, float a_pX, float a_pY, float a_pZ);
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void Rigidbody_applyForceCentral (IntPtr a_ptr, float a_x, float a_y, float a_z);
 
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void Rigidbody_applyTorque (IntPtr a_ptr, float a_x, float a_y, float a_z);
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void Rigidbody_applyTorqueImpulse (IntPtr a_ptr, float a_x, float a_y, float a_z);
 
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void Rigidbody_applyImpulse (IntPtr a_ptr, float a_iX, float a_iY, float a_iZ, float a_pX, float a_pY, float a_pZ);
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void Rigidbody_applyImpulseCentral (IntPtr a_ptr, float a_x, float a_y, float a_z);
         }
 

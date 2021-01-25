@@ -4,13 +4,11 @@ using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Threading;
 
 namespace Erde.Graphics
 {
     public class Camera : GameObject, IDisposable
     {
-        public static Mutex CameraMutex;
         static List<Camera> Cameras;
 
         static Camera             m_mainCamera;
@@ -194,10 +192,9 @@ namespace Erde.Graphics
             if (Cameras == null)
             {
                 Cameras = new List<Camera>();
-                CameraMutex = new Mutex();
             }
 
-            CameraMutex.WaitOne();
+            lock (CameraList)
             {
                 Cameras.Add(this);
 
@@ -206,7 +203,6 @@ namespace Erde.Graphics
                     m_mainCamera = this;
                 }
             }
-            CameraMutex.ReleaseMutex();
         }
 
         public Vector3 ScreenToWorld (Vector3 a_screenPos)
@@ -228,9 +224,7 @@ namespace Erde.Graphics
             Tools.VerifyObjectMemoryState(this, a_state);
 #endif
             
-            base.Dispose();
-
-            CameraMutex.WaitOne();
+            lock (CameraList)
             {
                 if (m_mainCamera == this)
                 {
@@ -239,7 +233,6 @@ namespace Erde.Graphics
     
                 Cameras.Remove(this);
             }
-            CameraMutex.ReleaseMutex();
         }
 
         ~Camera ()
@@ -247,8 +240,10 @@ namespace Erde.Graphics
             Dispose(false);
         }
 
-        public new void Dispose ()
+        public override void Dispose ()
         {
+            base.Dispose();
+
             Dispose(true);
             GC.SuppressFinalize(this);
         }

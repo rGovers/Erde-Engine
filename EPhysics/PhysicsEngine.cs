@@ -1,10 +1,13 @@
-﻿using Erde.Physics.Broadphase;
+﻿using Erde;
+using Erde.Physics.Broadphase;
 using Erde.Physics.Configuration;
 using Erde.Physics.Solver;
 using OpenTK;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Threading;
 
 namespace Erde.Physics
@@ -81,6 +84,9 @@ namespace Erde.Physics
 
         public PhysicsEngine (bool a_threaded)
         {
+            Debug.Assert(Instance == null);
+            Instance = this;
+            
             m_threaded = a_threaded;
 
             m_shutDown = false;
@@ -109,12 +115,6 @@ namespace Erde.Physics
 
                 StartUp();
             }
-
-            if (Instance != null)
-            {
-                InternalConsole.Warning("Multiple physics engines created");
-            }
-            Instance = this;
         }
 
         void Run ()

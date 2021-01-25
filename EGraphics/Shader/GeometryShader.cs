@@ -1,49 +1,53 @@
-using OpenTK.Graphics.OpenGL;
+using Erde.Application;
+using Erde.Graphics.Internal.Shader;
 using System;
-using System.Diagnostics;
 
 namespace Erde.Graphics.Shader
 {
-    public class GeometryShader : IGLObject
+    public class GeometryShader : IGraphicsObject
     {
-        int      m_shader;
-        string   m_source;
+        IGraphicsObject m_internalObject;
 
-        Pipeline m_pipeline;
+        Pipeline        m_pipeline;
 
-        internal int Handle
+        public IGraphicsObject InternalObject
         {
             get
             {
-                return m_shader;
-            }
-        }
-
-        public string Source
-        {
-            get
-            {
-                return m_source;
+                return m_internalObject;
             }
         }
 
         public GeometryShader (string a_source, Pipeline a_pipeline)
         {
-            m_source = a_source;
-
             m_pipeline = a_pipeline;
+            
+            if (m_pipeline.ApplicationType == e_ApplicationType.Managed)
+            {
+                m_internalObject = new OpenTKGeometryShader(a_source, m_pipeline);
+            }
+            else
+            {
+                m_internalObject = new NativeGeometryShader(a_source, m_pipeline);
+            }
 
-            m_pipeline.InputQueue.Enqueue(this);
+            m_pipeline.AddObject(this);
         }
 
-        // public GeometryShader (string a_filename, AssetManager a_assetManager, Pipeline a_pipeline) : this(Program.LoadSource(a_filename, a_assetManager), a_pipeline) { }
-
-        private void Dispose (bool a_state)
+        public void ModifyObject ()
         {
-            Debug.Assert(a_state, string.Format("[Warning] Resource leaked {0}", GetType().ToString()));
+            m_internalObject.ModifyObject();
+        }
 
-            // Queues the destruction of the geometry shader on the GPU
-            m_pipeline.DisposalQueue.Enqueue(this);
+        void Dispose (bool a_state)
+        {
+#if DEBUG_INFO
+            Tools.VerifyObjectMemoryState(this, a_state);
+#endif
+
+            m_pipeline.RemoveObject(this);
+
+            m_internalObject.Dispose();
         }
 
         ~GeometryShader ()
@@ -54,31 +58,13 @@ namespace Erde.Graphics.Shader
         public void Dispose ()
         {
             Dispose(true);
+
             GC.SuppressFinalize(this);
-        }
-
-        public void ModifyObject ()
-        {
-            m_shader = GL.CreateShader(ShaderType.GeometryShader);
-            // Sets the source code for the shader to compile from
-            GL.ShaderSource(m_shader, m_source);
-            // Compiles the shader from the source code
-            GL.CompileShader(m_shader);
-
-#if DEBUG_INFO
-            // Error checking
-            string info = GL.GetShaderInfoLog(m_shader);
-
-            if (info != string.Empty)
-            {
-                InternalConsole.AddMessage(info, InternalConsole.e_Alert.Warning);
-            }
-#endif
         }
 
         public void DisposeObject ()
         {
-            GL.DeleteShader(m_shader);
+            m_internalObject.DisposeObject();
         }
     }
 }

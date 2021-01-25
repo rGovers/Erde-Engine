@@ -58,10 +58,19 @@
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="IApplication.cs" />
     <Compile Include="Input.cs" />
+    <Compile Include="Internal\NativeApplication.cs" />
+    <Compile Include="Internal\OpenTKApplication.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Application.cs" />
     <Compile Include="Time.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EBase\EBase.csproj">
+      <Project>{BED16E18-5667-4C51-B256-7975E1649BBD}</Project>
+      <Name>EBase</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

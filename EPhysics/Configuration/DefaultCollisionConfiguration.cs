@@ -7,9 +7,9 @@ namespace Erde.Physics.Configuration
     {
         class BtDefaultCollisionConfiguration
         {
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern IntPtr DefaultCollisionConfiguration_new ();
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void DefaultCollisionConfiguration_delete (IntPtr a_ptr);
         }
 

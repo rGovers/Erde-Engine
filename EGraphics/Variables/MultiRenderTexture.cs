@@ -4,35 +4,40 @@ using System.Diagnostics;
 
 namespace Erde.Graphics.Variables
 {
-    public class MultiRenderTexture : IGLObject
+    public class MultiRenderTexture : IGraphicsObject
     {
-        struct Resize : IGLObject
+        class Resize : IGraphicsObject
         {
+            int       m_width;
+            int       m_height;
+
             MultiRenderTexture m_renderTexture;
 
-            public Resize (MultiRenderTexture a_mrt)
+            public Resize (MultiRenderTexture a_mrt, int a_width, int a_height)
             {
                 m_renderTexture = a_mrt;
+
+                m_width = a_width;
+                m_height = a_height;
             }
 
             public void ModifyObject ()
             {
-                int width = m_renderTexture.m_width;
-                int height = m_renderTexture.m_height;
-
                 foreach (Texture texture in m_renderTexture.RenderTextures)
                 {
                     GL.BindTexture(TextureTarget.Texture2D, texture.Handle);
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba8, width, height, 0, PixelFormat.Rgba, PixelType.Byte, IntPtr.Zero);
+                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba8, m_width, m_height, 0, PixelFormat.Rgba, PixelType.Byte, IntPtr.Zero);
 
-                    texture.Width = width;
-                    texture.Height = height;
+                    texture.Width = m_width;
+                    texture.Height = m_height;
                 }
 
-                GL.BindTexture(TextureTarget.Texture2D, m_renderTexture.DepthBuffer.Handle);
-                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, width, height, 0, PixelFormat.DepthComponent, PixelType.Byte, IntPtr.Zero);
-                m_renderTexture.DepthBuffer.Width = width;
-                m_renderTexture.DepthBuffer.Height = height;
+                Texture depthBuffer = m_renderTexture.DepthBuffer;
+                
+                GL.BindTexture(TextureTarget.Texture2D, depthBuffer.Handle);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, m_width, m_height, 0, PixelFormat.DepthComponent, PixelType.Byte, IntPtr.Zero);
+                depthBuffer.Width = m_width;
+                depthBuffer.Height = m_height;
             }
 
             public void DisposeObject ()
@@ -49,8 +54,7 @@ namespace Erde.Graphics.Variables
         Texture[] m_renderTextures;
         Texture   m_depthTexture;
 
-        int       m_width;
-        int       m_height;
+        Pipeline  m_pipeline;
 
         public int BufferHandle
         {
@@ -80,7 +84,7 @@ namespace Erde.Graphics.Variables
         {
             get
             {
-                return m_width;
+                return m_depthTexture.Width;
             }
         }
 
@@ -88,17 +92,12 @@ namespace Erde.Graphics.Variables
         {
             get
             {
-                return m_height;
+                return m_depthTexture.Height;
             }
         }
 
-        private Pipeline m_pipeline;
-
         public MultiRenderTexture (int a_buffers, int a_width, int a_height, Pipeline a_pipeline)
         {
-            m_width = a_width;
-            m_height = a_height;
-
             m_pipeline = a_pipeline;
 
             m_renderTextures = new Texture[a_buffers];
@@ -109,20 +108,19 @@ namespace Erde.Graphics.Variables
 
             m_depthTexture = new Texture(a_width, a_height, PixelFormat.DepthComponent, PixelInternalFormat.DepthComponent, m_pipeline);
 
-            m_pipeline.InputQueue.Enqueue(this);
+            m_pipeline.AddObject(this);
         }
 
         public void ResizeTextures (int a_width, int a_height)
         {
-            m_width = a_width;
-            m_height = a_height;
-            
-            m_pipeline.InputQueue.Enqueue(new Resize(this));
+            m_pipeline.AddObject(new Resize(this, a_width, a_height));
         }
 
-        private void Dispose (bool a_state)
+        void Dispose (bool a_state)
         {
-            Debug.Assert(a_state, string.Format("[Warning] Resource leaked {0}", GetType().ToString()));
+#if DEBUG_INFO
+            Tools.VerifyObjectMemoryState(this, a_state);
+#endif
 
             foreach (Texture texture in m_renderTextures)
             {
@@ -131,7 +129,7 @@ namespace Erde.Graphics.Variables
 
             m_depthTexture.Dispose();
 
-            m_pipeline.InputQueue.Enqueue(this);
+            m_pipeline.RemoveObject(this);
         }
 
         ~MultiRenderTexture ()

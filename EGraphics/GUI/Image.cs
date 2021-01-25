@@ -1,3 +1,4 @@
+using Erde.Graphics.Shader;
 using Erde.Graphics.Variables;
 using Erde.IO;
 using OpenTK;
@@ -54,7 +55,14 @@ namespace Erde.Graphics.GUI
                 CalculateTrueTransform();
                 Matrix4 transform = ToMatrix(a_resolution);
 
-                GLCommand.Blit(m_texture, transform, true);
+                Program program = Shaders.TRANSFORM_IMAGE_SHADER_INVERTED;
+
+                GraphicsCommand.BindProgram(program);
+
+                GraphicsCommand.BindMatrix4(program, 0, transform);
+                GraphicsCommand.BindTexture(program, 1, m_texture, 0);
+
+                GraphicsCommand.Draw();
             }
         }
 

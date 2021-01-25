@@ -7,9 +7,9 @@ namespace Erde.Physics.Collider
     {
         class BtSphereCollisionShape
         {
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern IntPtr SphereCollisionShape_new (float a_radius);
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void SphereCollisionShape_delete (IntPtr a_ptr);
         }
 

@@ -38,42 +38,73 @@
     <DefineConstants>DEBUG_INFO</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="OpenTK, Version=3.2.0.0, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
+      <HintPath>..\packages\OpenTK.3.2\lib\net20\OpenTK.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConsoleDisplay.cs" />
-    <Compile Include="GLCommand.cs" />
-    <Compile Include="GUI\TextField.cs" />
-    <Compile Include="IPost.cs" />
-    <Compile Include="IRenderObject.cs" />
-    <Compile Include="Lights\DirectionalLight.cs" />
-    <Compile Include="Lights\Light.cs" />
-    <Compile Include="Variables\MultiRenderTexture.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="IGLObject.cs" />
     <Compile Include="BindableContainer.cs" />
+    <Compile Include="Binding.cs" />
     <Compile Include="Camera.cs" />
+    <Compile Include="ConsoleDisplay.cs" />
+    <Compile Include="DrawingContainer.cs" />
     <Compile Include="Frustum.cs" />
     <Compile Include="Graphics.cs" />
-    <Compile Include="Pipeline.cs" />
-    <Compile Include="PipelineTime.cs" />
+    <Compile Include="GraphicsCommand.cs" />
     <Compile Include="GUI\Canvas.cs" />
     <Compile Include="GUI\Element.cs" />
     <Compile Include="GUI\Image.cs" />
     <Compile Include="GUI\TextBox.cs" />
+    <Compile Include="GUI\TextField.cs" />
+    <Compile Include="IGraphics.cs" />
+    <Compile Include="IGraphicsCommand.cs" />
+    <Compile Include="IGraphicsObject.cs" />
+    <Compile Include="Internal\Lights\OpenTKDirectionalLight.cs" />
+    <Compile Include="Internal\NativeGraphics.cs" />
+    <Compile Include="Internal\NativePipeline.cs" />
+    <Compile Include="Internal\OpenTKGraphics.cs" />
+    <Compile Include="Internal\OpenTKGraphicsCommand.cs" />
+    <Compile Include="Internal\OpenTKPipeline.cs" />
+    <Compile Include="Internal\Shader\NativeGeometryShader.cs" />
+    <Compile Include="Internal\Shader\NativePixelShader.cs" />
+    <Compile Include="Internal\Shader\NativeProgram.cs" />
+    <Compile Include="Internal\Shader\NativeVertexShader.cs" />
+    <Compile Include="Internal\Shader\OpenTKGeometryShader.cs" />
+    <Compile Include="Internal\Shader\OpenTKPixelShader.cs" />
+    <Compile Include="Internal\Shader\OpenTKProgram.cs" />
+    <Compile Include="Internal\Shader\OpenTKVertexShader.cs" />
+    <Compile Include="Internal\Variables\NativeModel.cs" />
+    <Compile Include="Internal\Variables\NativeUniformBufferObject.cs" />
+    <Compile Include="Internal\Variables\OpenTKModel.cs" />
+    <Compile Include="Internal\Variables\OpenTKUniformBufferObject.cs" />
+    <Compile Include="IPipeline.cs" />
+    <Compile Include="IPost.cs" />
+    <Compile Include="IRenderObject.cs" />
+    <Compile Include="Lights\DirectionalLight.cs" />
+    <Compile Include="Lights\ILight.cs" />
+    <Compile Include="Lights\Light.cs" />
+    <Compile Include="ModelVertexInfo.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Pipeline.cs" />
+    <Compile Include="PipelineTime.cs" />
     <Compile Include="Rendering\Material.cs" />
     <Compile Include="Rendering\MeshRenderer.cs" />
-    <Compile Include="Rendering\Model.cs" />
     <Compile Include="Rendering\Renderer.cs" />
     <Compile Include="Rendering\Skybox.cs" />
-    <Compile Include="Shader\Shaders.cs" />
     <Compile Include="Shader\GeometryShader.cs" />
+    <Compile Include="Shader\IProgram.cs" />
     <Compile Include="Shader\PixelShader.cs" />
     <Compile Include="Shader\Program.cs" />
+    <Compile Include="Shader\Shaders.cs" />
     <Compile Include="Shader\VertexShader.cs" />
     <Compile Include="Variables\CubeMap.cs" />
+    <Compile Include="Variables\IModel.cs" />
+    <Compile Include="Variables\IUniformBufferObject.cs" />
+    <Compile Include="Variables\Model.cs" />
+    <Compile Include="Variables\MultiRenderTexture.cs" />
     <Compile Include="Variables\RenderTexture.cs" />
     <Compile Include="Variables\Texture.cs" />
     <Compile Include="Variables\UniformBufferObject.cs" />
@@ -92,9 +123,6 @@
   <ItemGroup>
     <None Include="OpenTK.dll.config" />
     <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="OpenTK" Version="3.2.0" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

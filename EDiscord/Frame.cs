@@ -77,61 +77,35 @@ namespace Erde.Discord
             return JsonConvert.DeserializeObject<T>(json);
         }
 
-        internal static Frame ReadStream (Stream a_stream)
+        internal static Frame FromBytes(byte[] a_bytes)
         {
             Frame frame = new Frame();
 
-            uint length;
+            frame.m_opCode = (e_OpCode)BitConverter.ToUInt32(a_bytes, 0);
 
-            bool littleEndian = BitConverter.IsLittleEndian;
-
-            byte[] bytes = new byte[4];
-
-            int count = a_stream.Read(bytes, 0, 4);
-            if (count != 4)
-            {
-                return null;
-            }
-
-            if (!littleEndian)
-            {
-                Array.Reverse(bytes);
-            }
-            frame.m_opCode = (e_OpCode)BitConverter.ToUInt32(bytes, 0);
-
-            count = a_stream.Read(bytes, 0, 4);
-            if (count != 4)
-            {
-                return null;
-            }
-
-            if (!littleEndian)
-            {
-                Array.Reverse(bytes);
-            }
-            length = BitConverter.ToUInt32(bytes, 0);
-
+            uint length = BitConverter.ToUInt32(a_bytes, 4);
             frame.m_data = new byte[length];
 
-            uint bytesRead = 0;
-            while (bytesRead < length)
-            {
-                bytesRead += (uint)a_stream.Read(frame.m_data, 0, (int)Math.Min(int.MaxValue, length - bytesRead));
-            }
+            frame.m_data = new byte[length];
+            Array.Copy(a_bytes, 8, frame.m_data, 0, length);
 
             return frame;
         }
-        internal void WriteToStream (Stream a_stream)
+
+        internal byte[] ToBytes()
         {
             byte[] op = ConvertBytes((uint)m_opCode);
+            long opLength = op.Length;
+
             byte[] length = ConvertBytes((uint)m_data.LongLength);
+            long lengthLength = length.Length;
 
-            byte[] buffer = new byte[op.Length + length.Length + m_data.LongLength];
+            byte[] buffer = new byte[opLength + lengthLength + m_data.LongLength];
             op.CopyTo(buffer, 0);
-            length.CopyTo(buffer, op.Length);
-            m_data.CopyTo(buffer, op.Length + length.Length);
+            length.CopyTo(buffer, opLength);
+            m_data.CopyTo(buffer, opLength + lengthLength);
 
-            a_stream.Write(buffer, 0, buffer.Length);
+            return buffer;
         }
     }
 }

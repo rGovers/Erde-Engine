@@ -12,27 +12,27 @@ namespace Erde.Physics
     {
         class BtDiscreteDynamicsWorld
         {
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern IntPtr DiscreteDynamicsWorld_new (IntPtr a_dispatcher, IntPtr a_broadphase, IntPtr a_solver, IntPtr a_configuration);
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void DiscreteDynamicsWorld_delete (IntPtr a_ptr);
 
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void DiscreteDynamicsWorld_setGravity (IntPtr a_ptr, float a_x, float a_y, float a_z);
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void DiscreteDynamicsWorld_stepSimulation (IntPtr a_ptr, float a_timeStep, int a_maxSteps, float a_fixedTimeStep);
 
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void DiscreteDynamicsWorld_addRigidBody (IntPtr a_ptr, IntPtr a_rigidBody);
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void DiscreteDynamicsWorld_removeRigidBody (IntPtr a_ptr, IntPtr a_rigidBody);
 
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void DiscreteDynamicsWorld_addCollisionObject (IntPtr a_ptr, IntPtr a_collisionObject);
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void DiscreteDynamicsWorld_removeCollisionObject (IntPtr a_ptr, IntPtr a_collisionObject);
 
-            [DllImport("BtWrapNative", CallingConvention = CallingConvention.Cdecl)]
+            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
             public static extern void DiscreteDynamicsWorld_raycastClosest (IntPtr a_ptr, float a_xF, float a_yF, float a_zF, float a_xT, float a_yT, float a_zT, out IntPtr a_object, out float a_xN, out float a_yN, out float a_zN, out float a_xP, out float a_yP, out float a_zP);
         }
 
