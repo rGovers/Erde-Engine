@@ -1,3 +1,4 @@
+using Erde;
 using Erde.Graphics.Shader;
 using Erde.Graphics.Variables;
 using Erde.IO;
@@ -36,6 +37,7 @@ namespace Erde.Graphics.GUI
                 if (m_text != value)
                 {
                     m_text = value;
+
                     m_updateString = true;
                 }
             }
@@ -51,6 +53,7 @@ namespace Erde.Graphics.GUI
                 if (m_font != value)
                 {
                     m_font = value;
+
                     m_updateString = true;
                 }
             }
@@ -66,6 +69,7 @@ namespace Erde.Graphics.GUI
                 if (m_brush != value)
                 {
                     m_brush = value;
+
                     m_updateString = true;
                 }
             }
@@ -94,6 +98,9 @@ namespace Erde.Graphics.GUI
             a_height = 100;
             a_brush = Brushes.White;
 
+            string translationTag = null;
+            string fontTag = null;
+
             foreach (XmlAttribute att in a_node.Attributes)
             {
                 string attName = att.Name.ToLower();
@@ -104,6 +111,18 @@ namespace Erde.Graphics.GUI
                         a_text = att.Value;
 
                         break;
+                    }
+                case "translationtag":
+                    {
+                        translationTag = att.Value;
+
+                        break;
+                    }
+                case "fonttag":
+                    {
+                        fontTag = att.Value;
+
+                        break;    
                     }
                 case "width":
                     {
@@ -140,11 +159,37 @@ namespace Erde.Graphics.GUI
                     }
                 }
             }
+
+            if (!string.IsNullOrEmpty(translationTag))
+            {
+                string text = translationTag.Translate();
+
+                if (!string.IsNullOrEmpty(text))
+                {
+                    a_text = text;
+                }
+            }
+            if (!string.IsNullOrEmpty(fontTag))
+            {
+                string text = Translation.GetFontName(fontTag);
+
+                if (!string.IsNullOrEmpty(text))
+                {
+                    a_fontFamily = text;
+                }
+            }
         }
         protected static Font CompileFontData (string a_fontFamily, float a_fontSize)
         {
             if (!string.IsNullOrEmpty(a_fontFamily))
             {
+                FontFamily fontFamily = FontCollection.GetFontFamily(a_fontFamily);
+
+                if (fontFamily != null)
+                {
+                    return new Font(fontFamily, a_fontSize, GraphicsUnit.Pixel);
+                }
+
                 InstalledFontCollection fontCollection = new InstalledFontCollection();
 
                 FontFamily[] fontFamilies = fontCollection.Families;
@@ -153,7 +198,7 @@ namespace Erde.Graphics.GUI
                 {
                     if (font.Name == a_fontFamily)
                     {
-                        return new Font(font, a_fontSize);
+                        return new Font(font, a_fontSize, GraphicsUnit.Pixel);
                     }
                 }
             }
@@ -173,6 +218,7 @@ namespace Erde.Graphics.GUI
 
             ExtractData(a_node, out text, out fontFamily, out fontSize, out width, out height, out brush);
             Font font = CompileFontData(fontFamily, fontSize);
+            // Font font = new Font(FontFamily.GenericMonospace, fontSize);
 
             return new TextBox(brush, font, width, height, a_pipeline)
             {
@@ -192,16 +238,20 @@ namespace Erde.Graphics.GUI
             int width = m_texture.Width;
             int height = m_texture.Height;
 
+            Rectangle rect = new Rectangle(0, 0, width, height);
+
             Bitmap bitmap = new Bitmap(width, height, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 
             System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(bitmap);
             graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
-            graphics.Clip = new Region(new Rectangle(0, 0, width, height));
+            graphics.Clip = new Region(rect);
+
+            // Console.WriteLine("Font: " + m_font.Name);
 
             graphics.DrawString(m_text, m_font, m_brush, 0.0f, 0.0f);
             graphics.Flush();
 
-            BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height),
+            BitmapData data = bitmap.LockBits(rect,
             ImageLockMode.ReadOnly,
             System.Drawing.Imaging.PixelFormat.Format32bppArgb);
 

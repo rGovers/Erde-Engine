@@ -51,9 +51,9 @@
       <HintPath>..\packages\OpenTK.3.2\lib\net20\OpenTK.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AssetManager.cs" />
     <Compile Include="Behaviour.cs" />
     <Compile Include="Component.cs" />
     <Compile Include="DistanceField.cs" />
@@ -69,6 +69,7 @@
     <Compile Include="Reflection.cs" />
     <Compile Include="Tools.cs" />
     <Compile Include="Transform.cs" />
+    <Compile Include="Translation.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="OpenTK.dll.config" />

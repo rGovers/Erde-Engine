@@ -133,6 +133,11 @@ namespace Erde.Graphics.GUI
 
         void PopulateElements (XmlNode a_node, Element a_parent)
         {
+            if (a_node.NodeType == XmlNodeType.Comment)
+            {
+                return;
+            }
+
             Type type = Type.GetType(a_node.Name);
 
             if (type == null)
@@ -153,8 +158,6 @@ namespace Erde.Graphics.GUI
 
             if (element != null)
             {
-                m_elements.Add(element);
-
                 foreach (XmlAttribute att in a_node.Attributes)
                 {
                     switch (att.Name.ToLower())
@@ -305,6 +308,8 @@ namespace Erde.Graphics.GUI
                             break;
                         }
                     }
+
+                    m_elements.Add(element);
                 }
 
                 foreach (XmlNode node in a_node.ChildNodes)

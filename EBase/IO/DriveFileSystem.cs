@@ -29,13 +29,8 @@ namespace Erde.IO
             }
 
             a_asset = File.ReadAllBytes(fullPath);
-
-            if (a_asset != null)
-            {
-                return true;
-            }
-
-            return false;
+            
+            return a_asset != null;
         }
 
         public bool Load (string a_path, out Stream a_stream)
@@ -51,12 +46,7 @@ namespace Erde.IO
 
             a_stream = File.OpenRead(fullPath);
 
-            if (a_stream != null)
-            {
-                return true;
-            }
-
-            return false;
+            return a_stream != null;
         }
 
         void CreateDirectories (string a_path)

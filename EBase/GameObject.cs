@@ -46,22 +46,25 @@ namespace Erde
 
             lock (this)
             {
-                foreach (Component comp in m_components)
-            {
-                lock (comp)
-                {
-                    IDisposable disp = comp as IDisposable;
+                m_update = null;
+                m_physicsUpdate = null;
 
-                    if (disp != null)
+                foreach (Component comp in m_components)
+                {
+                    lock (comp)
                     {
-                        disp.Dispose();
+                        IDisposable disp = comp as IDisposable;
+
+                        if (disp != null)
+                        {
+                            disp.Dispose();
+                        }
                     }
                 }
-            }
 
-            m_components.Clear();
+                m_components.Clear();
 
-            m_transform = null;
+                m_transform = null;
             }
         }
 
@@ -200,7 +203,12 @@ namespace Erde
 
         public static void UpdateBehaviours ()
         {
-            GameObject[] gameObjects = GameObjects.ToArray();
+            GameObject[] gameObjects;
+            lock (GameObjects)
+            {
+                gameObjects = GameObjects.ToArray();
+            }
+
             for (int i = 0; i < gameObjects.Length; ++i)
             {
                 GameObject obj = gameObjects[i];
@@ -221,7 +229,12 @@ namespace Erde
         }
         public static void PhysicsUpdateBehaviours ()
         {
-            GameObject[] gameObjects = GameObjects.ToArray();
+            GameObject[] gameObjects;
+            lock (GameObjects)
+            {
+                gameObjects = GameObjects.ToArray();
+            }
+
             for (int i = 0; i < gameObjects.Length; ++i)
             {
                 GameObject obj = gameObjects[i];

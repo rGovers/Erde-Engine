@@ -498,6 +498,11 @@ namespace Erde.Graphics.Internal
                         {
                             Transform transform = cam.Transform;
 
+                            if (transform == null)
+                            {
+                                continue;
+                            }
+
                             GL.Viewport(0, 0, m_renderTarget.Width, m_renderTarget.Height);
 
                             GL.BindFramebuffer(FramebufferTarget.FramebufferExt, m_renderTarget.BufferHandle);
