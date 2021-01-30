@@ -308,9 +308,9 @@ namespace Erde.Graphics.GUI
                             break;
                         }
                     }
-
-                    m_elements.Add(element);
                 }
+
+                m_elements.Add(element);
 
                 foreach (XmlNode node in a_node.ChildNodes)
                 {
@@ -487,6 +487,8 @@ namespace Erde.Graphics.GUI
                                         {
                                             XmlDocument xmlDocument = new XmlDocument();
                                             xmlDocument.Load(stream);
+
+                                            stream.Dispose();
 
                                             m_childCanvas = LoadCanvasInternal(xmlDocument, m_fileSystem, m_pipeline);
                                             m_childCanvas.m_parentCanvas = this;

@@ -250,7 +250,13 @@ namespace Erde.Graphics.Internal
         {
             Frustum frustrum;
 
-            foreach (Light light in Light.LightList)
+            LinkedList<Light> lights;
+            lock (Light.LightList)
+            {
+                lights = Light.LightList;
+            }
+
+            foreach (Light light in lights)
             {
                 if (light.ShadowMapped)
                 {
@@ -477,11 +483,6 @@ namespace Erde.Graphics.Internal
 
         void Draw ()
         {
-            Vector3 camPos = Vector3.Zero;
-            Vector3 camForward = Vector3.Zero;
-
-            Frustum frustrum = null;
-
             if (Light.LightList != null)
             {
                 ShadowPass();
@@ -511,11 +512,11 @@ namespace Erde.Graphics.Internal
                             GL.ClearColor(cam.ClearColor);
                             GL.Clear(cam.ClearFlags);
 
-                            camPos = transform.Translation;
-                            camForward = transform.Forward;
+                            Vector3 camPos = transform.Translation;
+                            Vector3 camForward = transform.Forward;
 
-                            frustrum = SetCameraBuffer(cam);
-
+                            Frustum frustrum = SetCameraBuffer(cam);
+                            
                             if (cam.DrawSkybox)
                             {
                                 SkyBoxPass();

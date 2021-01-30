@@ -121,37 +121,38 @@ namespace Erde.Graphics.Variables
 
             public void ModifyObject ()
             {
-                Bitmap map = null;
                 Stream stream;
                 if (m_fileSystem.Load(m_filePath, out stream))
                 {
-                    map = new Bitmap(stream);
+                    Bitmap map = new Bitmap(stream);
+
+                    stream.Dispose();
+
+                    BitmapData data = map.LockBits(new Rectangle(0, 0, map.Width, map.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+
+                    m_texture.m_pixelInternalFormat = PixelInternalFormat.Rgba;
+                    m_texture.m_pixelFormat = OpenTK.Graphics.OpenGL.PixelFormat.Bgra;
+
+                    GL.BindTexture(TextureTarget.Texture2D, m_texture.m_texture);
+
+                    GL.TexImage2D
+                    (
+                        TextureTarget.Texture2D,
+                        0,
+                        PixelInternalFormat.Rgba,
+                        map.Width, map.Height,
+                        0,
+                        OpenTK.Graphics.OpenGL.PixelFormat.Bgra,
+                        PixelType.UnsignedByte,
+                        data.Scan0
+                    );
+
+                    m_texture.m_width = map.Width;
+                    m_texture.m_height = map.Height;
+
+                    map.UnlockBits(data);
+                    map.Dispose();
                 }
-
-                BitmapData data = map.LockBits(new Rectangle(0, 0, map.Width, map.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
-
-                m_texture.m_pixelInternalFormat = PixelInternalFormat.Rgba;
-                m_texture.m_pixelFormat = OpenTK.Graphics.OpenGL.PixelFormat.Bgra;
-
-                GL.BindTexture(TextureTarget.Texture2D, m_texture.m_texture);
-
-                GL.TexImage2D
-                (
-                    TextureTarget.Texture2D,
-                    0,
-                    PixelInternalFormat.Rgba,
-                    map.Width, map.Height,
-                    0,
-                    OpenTK.Graphics.OpenGL.PixelFormat.Bgra,
-                    PixelType.UnsignedByte,
-                    data.Scan0
-                );
-
-                m_texture.m_width = map.Width;
-                m_texture.m_height = map.Height;
-
-                map.UnlockBits(data);
-                map.Dispose();
             }
         }
 
