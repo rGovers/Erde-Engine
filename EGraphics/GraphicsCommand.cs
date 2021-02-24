@@ -16,7 +16,7 @@ namespace Erde.Graphics
         {
             if (a_pipeline.Application.ApplicationType == e_ApplicationType.Managed)
             {
-                InternalObject = new OpenTKGraphicsCommand();
+                InternalObject = new OpenTKGraphicsCommand(a_pipeline);
             }
             else
             {
@@ -39,6 +39,11 @@ namespace Erde.Graphics
             InternalObject.BindRenderTexture(a_renderTexture);
         }
 
+        public static void BindModel(Model a_model)
+        {
+            a_model.Bind();
+        }
+
         public static void BindTexture(Program a_program, int a_binding, Texture a_texture, int a_index)
         {
             InternalObject.BindTexture(a_program, a_binding, a_texture, a_index);
@@ -56,6 +61,15 @@ namespace Erde.Graphics
         public static void Draw()
         {
             InternalObject.Draw();
+        }
+        
+        public static void DrawElements(uint a_indices)
+        {
+            InternalObject.DrawElements(a_indices);
+        }
+        public static void DrawElementsUInt(uint a_indices)
+        {
+            InternalObject.DrawElementsUInt(a_indices);
         }
     }
 }

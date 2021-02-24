@@ -1,4 +1,5 @@
 using Erde.Graphics;
+using Erde.Graphics.Rendering;
 
 namespace Erde.Graphics.Lights
 {
@@ -6,5 +7,8 @@ namespace Erde.Graphics.Lights
     {
         void BindShadowMap (BindableContainer a_bindableContainer);
         void BindShadowDrawing ();
+
+        Material BindLightDrawing ();
+        Graphics.LightContainer GetLightData ();
     }
 }

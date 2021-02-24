@@ -11,6 +11,13 @@ namespace Erde.Graphics.Internal
 {
     public class OpenTKGraphicsCommand : IGraphicsCommand
     {
+        OpenTKPipeline m_pipeline;
+
+        public OpenTKGraphicsCommand(Pipeline a_pipeline)
+        {
+            m_pipeline = (OpenTKPipeline)a_pipeline.InternalPipeline;
+        }
+
         public void SetViewport(Rectangle a_rect)
         {
             GL.Viewport(a_rect);
@@ -96,10 +103,31 @@ namespace Erde.Graphics.Internal
 
         public void Draw()
         {
+            // A dummy vao to suppress error data is not needed
+            GL.BindVertexArray(m_pipeline.StaticVAO);
+
             GL.DrawArrays(PrimitiveType.TriangleStrip, 0, 4);
 
 #if DEBUG_INFO
             Pipeline.GLError("Graphics Command: Draw: ");
+#endif
+        }
+
+        public void DrawElements(uint a_indices)
+        {
+            GL.DrawElements(PrimitiveType.Triangles, (int)a_indices, DrawElementsType.UnsignedShort, 0);
+
+#if DEBUG_INFO
+            Pipeline.GLError("Graphics Command: DrawElements: ");
+#endif
+        }
+
+        public void DrawElementsUInt(uint a_indices)
+        {
+            GL.DrawElements(PrimitiveType.Triangles, (int)a_indices, DrawElementsType.UnsignedInt, 0);
+
+#if DEBUG_INFO
+            Pipeline.GLError("Graphics Command: DrawElementsUInt: ");
 #endif
         }
     }

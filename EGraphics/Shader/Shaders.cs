@@ -92,7 +92,9 @@ void main()
             TRANSFORM_IMAGE_SHADER = new Program(pixelShader, vertexShader, null, 0, false, a_pipeline);
             TRANSFORM_IMAGE_SHADER_INVERTED = new Program(pixelShaderInverted, vertexShader, null, 0, false, a_pipeline);
 
+#if DEBUG_INFO
             Pipeline.GLError("Init Shaders: ");
+#endif
 
             pixelShader.Dispose();
             pixelShaderInverted.Dispose();

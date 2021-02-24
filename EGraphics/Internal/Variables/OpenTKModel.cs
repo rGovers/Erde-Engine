@@ -101,6 +101,12 @@ namespace Erde.Graphics.Internal.Variables
 
                         break;
                     }
+                    case e_FieldType.UnsignedInt:
+                    {
+                        fieldType = VertexAttribPointerType.UnsignedInt;
+
+                        break;
+                    }
                 }
 
                 GL.EnableVertexAttribArray(i);

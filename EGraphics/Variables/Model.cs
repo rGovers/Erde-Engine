@@ -1,11 +1,12 @@
 ﻿using Erde.Application;
 using Erde.Graphics.Internal.Variables;
+using Erde.Graphics.IO;
 using Erde.IO;
 using OpenTK;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Erde.Graphics.Variables
 {
@@ -14,6 +15,7 @@ namespace Erde.Graphics.Variables
         Cube
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     public struct Vertex
     {
         public Vector4 Position;
@@ -25,6 +27,29 @@ namespace Erde.Graphics.Variables
             Position = a_position;
             Normal = a_normal;
             TexCoords = a_texCoords;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential, Size=66)]
+    public struct SkinnedVertex
+    {
+        public Vector4 Position;
+        public Vector3 Normal;
+        public Vector2 TexCoords;
+
+        [MarshalAsAttribute(UnmanagedType.ByValArray, SizeConst = 5)]
+        public ushort[] Bones;
+        [MarshalAsAttribute(UnmanagedType.ByValArray, SizeConst = 5)]
+        public float[] Weights;
+
+        public SkinnedVertex(Vector4 a_position, Vector3 a_normal, Vector2 a_texCoords, ushort[] a_bones, float[] a_weights)
+        {
+            Position = a_position;
+            Normal = a_normal;
+            TexCoords = a_texCoords;
+
+            Bones = a_bones;
+            Weights = a_weights;
         }
     }
 
@@ -90,12 +115,32 @@ namespace Erde.Graphics.Variables
             {
                 if (m_fileSystem != null)
                 {
-                    byte[] bytes;
-                    if (m_fileSystem.Load(m_fileName, out bytes))
-                    {
-                        string[] lines = Encoding.UTF8.GetString(bytes).Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                    string ext = Path.GetExtension(m_fileName);
 
-                        m_model.LoadModel(lines);
+                    switch (ext.ToLower())
+                    {
+                        case ".obj":
+                        {
+                            OBJLoader objLoader = new OBJLoader(m_fileName, m_fileSystem);
+
+                            m_model.SetData(objLoader.Vertices, objLoader.Indices, objLoader.Length);
+
+                            break;
+                        }
+                        case ".dae":
+                        {
+                            ColladaLoader colladaLoader = new ColladaLoader(m_fileName, m_fileSystem);
+
+                            Vertex[] vertices;
+                            ushort[] indicies;
+                            float len;
+
+                            colladaLoader.GenerateModelData(out vertices, out indicies, out len);
+
+                            m_model.SetData(vertices, indicies, len);
+
+                            break;
+                        }
                     }
                 }
             }
@@ -161,6 +206,10 @@ namespace Erde.Graphics.Variables
         {
             m_pipeline = a_pipeline;
 
+            m_radius = 0.0f;
+
+            m_indices = 0;
+
             if (a_pipeline.ApplicationType == e_ApplicationType.Managed)
             {
                 m_internalObject = new OpenTKModel();
@@ -193,13 +242,13 @@ namespace Erde.Graphics.Variables
             GC.SuppressFinalize(this);
         }
 
-        void SetData<T>(T[] a_vertices, ushort[] a_indices, float a_radius) where T : struct
+        internal void SetData<T>(T[] a_vertices, ushort[] a_indices, float a_radius) where T : struct
         {
+            m_internalObject.SetData(a_vertices, a_indices);
+
             m_indices = (uint)a_indices.LongLength;
 
             m_radius = a_radius;
-
-            m_internalObject.SetData(a_vertices, a_indices);
         }
 
         public void Bind()
@@ -256,126 +305,6 @@ namespace Erde.Graphics.Variables
             };
 
             SetData(vertices, indicies, Vector3.One.Length);
-        }
-        void LoadModel (string[] a_data)
-        {
-            List<Vector3> vertexPosition = new List<Vector3>();
-            List<Vector3> vertexNormal = new List<Vector3>();
-            List<Vector2> vertexTextureCoords = new List<Vector2>();
-
-            List<Vertex> vertices = new List<Vertex>();
-            List<ushort> indices = new List<ushort>();
-
-            Dictionary<Vertex, ushort> vertexLookup = new Dictionary<Vertex, ushort>();
-
-            float lengthSqr = 0.0f;
-
-            foreach (string line in a_data)
-            {
-                string l = line.ToLower();
-
-                int index = l.IndexOf(' ');
-
-                string data = l.Substring(index + 1, l.Length - (index + 1));
-
-                switch (l.Substring(0, index))
-                {
-                case "#":
-                case "o":
-                    {
-                        break;
-                    }
-                case "v":
-                    {
-                        Vector3 vertex = Vector3.Zero;
-
-                        string[] strings = data.Split(' ');
-
-                        vertex.X = float.Parse(strings[0]);
-                        vertex.Y = float.Parse(strings[1]);
-                        vertex.Z = float.Parse(strings[2]);
-
-                        lengthSqr = Math.Max(lengthSqr, vertex.LengthSquared);
-
-                        vertexPosition.Add(vertex);
-
-                        break;
-                    }
-                case "vn":
-                    {
-                        Vector3 vertex = Vector3.Zero;
-
-                        string[] strings = data.Split(' ');
-                        
-                        vertex.X = float.Parse(strings[0]);
-                        vertex.Y = float.Parse(strings[1]);
-                        vertex.Z = float.Parse(strings[2]);
-
-                        vertexNormal.Add(vertex);
-
-                        break;
-                    }
-                case "vt":
-                    {
-                        Vector2 vertex = Vector2.Zero;
-
-                        string[] strings = data.Split(' ');
-                        
-                        vertex.X = float.Parse(strings[0]);
-                        vertex.Y = 1 - float.Parse(strings[1]);
-
-                        vertexTextureCoords.Add(vertex);
-
-                        break;
-                    }
-                case "f":
-                    {
-                        string[] strings = data.Split(' ');
-
-                        foreach (string s in strings)
-                        {
-                            string[] ind = s.Split('/');
-
-                            Vertex vert = new Vertex()
-                            {
-                                Position = new Vector4(vertexPosition[int.Parse(ind[0]) - 1], 1)
-                            };
-
-                            if (ind.Length == 2)
-                            {
-                                if (s.Count(f => f == '/') == 2)
-                                {
-                                    vert.Normal = vertexNormal[int.Parse(ind[1]) - 1];
-                                }
-                                else
-                                {
-                                    vert.TexCoords = vertexTextureCoords[int.Parse(ind[1]) - 1];
-                                }
-                            }
-                            else
-                            {
-                                vert.TexCoords = vertexTextureCoords[int.Parse(ind[1]) - 1];
-                                vert.Normal = vertexNormal[int.Parse(ind[2]) - 1];
-                            }
-
-                            ushort val = 0;
-
-                            if (!vertexLookup.TryGetValue(vert, out val))
-                            {
-                                vertices.Add(vert);
-                                val = (ushort)(vertices.Count - 1);
-                                vertexLookup.Add(vert, val);
-                            }
-                            
-                            indices.Add(val);
-                        }
-
-                        break;
-                    }
-                }
-            }
-
-            SetData(vertices.ToArray(), indices.ToArray(), (float)Math.Sqrt(lengthSqr));
         }
         
         public static Model CreatePrimitive (e_PrimitiveType a_primitive, Pipeline a_pipeline)

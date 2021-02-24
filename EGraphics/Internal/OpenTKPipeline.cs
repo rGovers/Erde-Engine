@@ -22,11 +22,13 @@ namespace Erde.Graphics.Internal
         
         ConsoleDisplay                   m_consoleDisplay;
         
-        bool                             m_access = false;
-        
         bool                             m_shutDown;
         bool                             m_destroy;
         bool                             m_joinable;
+        
+        int                              m_staticVAO;
+        int                              m_staticIBO;
+        int                              m_staticVBO;
         
         Graphics                         m_graphicsPipeline;
         
@@ -39,6 +41,14 @@ namespace Erde.Graphics.Internal
             get
             {
                 return m_graphicsPipeline;
+            }
+        }
+
+        public int StaticVAO
+        {
+            get
+            {
+                return m_staticVAO;
             }
         }
 
@@ -118,7 +128,11 @@ namespace Erde.Graphics.Internal
 
         void StartUp (OpenTKApplication a_app)
         {
-            m_graphics = new GraphicsContext(GraphicsMode.Default, a_app.WindowInfo);
+#if DEBUG_INFO
+            m_graphics = new GraphicsContext(GraphicsMode.Default, a_app.WindowInfo, 4, 5, GraphicsContextFlags.Debug);
+#else
+            m_graphics = new GraphicsContext(GraphicsMode.Default, a_app.WindowInfo, 4, 5, GraphicsContextFlags.Default);
+#endif
 
             m_graphics.MakeCurrent(a_app.WindowInfo);
 
@@ -126,6 +140,14 @@ namespace Erde.Graphics.Internal
             GL.ClearColor(Color.FromArgb(255, 25, 25, 25));
 
             m_graphics.SwapInterval = 1;
+
+            m_staticVAO = GL.GenVertexArray();
+            m_staticVBO = GL.GenBuffer();
+            m_staticIBO = GL.GenBuffer();
+
+            GL.BindVertexArray(m_staticVAO);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, m_staticVBO);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, m_staticIBO);
 
             GL.Enable(EnableCap.DepthTest);
 
@@ -173,6 +195,10 @@ namespace Erde.Graphics.Internal
                 Disposal();
             }
 
+            GL.DeleteBuffer(m_staticIBO);
+            GL.DeleteBuffer(m_staticVBO);
+            GL.DeleteVertexArray(m_staticVAO);
+
             m_joinable = true;
         }
 
@@ -204,21 +230,22 @@ namespace Erde.Graphics.Internal
 
             m_consoleDisplay.Draw(size, m_pipeline.DisplayConsole);
 
-            m_access = true;
-            if (m_graphics != null)
+            lock (this)
             {
-                if (PipelineTime.FPS <= 55.0f)
+                if (m_graphics != null)
                 {
-                    m_graphics.SwapInterval = 0;
-                }
-                else
-                {
-                    m_graphics.SwapInterval = 1;
-                }
+                    if (PipelineTime.FPS <= 55.0f)
+                    {
+                        m_graphics.SwapInterval = 0;
+                    }
+                    else
+                    {
+                        m_graphics.SwapInterval = 1;
+                    }
 
-                m_graphics.SwapBuffers();
+                    m_graphics.SwapBuffers();
+                }
             }
-            m_access = false;
 
 #if DEBUG_INFO
             Pipeline.GLError("Pipeline: Update: ");
@@ -227,17 +254,20 @@ namespace Erde.Graphics.Internal
 
         public void Shutdown()
         {
-            while (m_access)
+            lock (this)
             {
-                Thread.Yield();
+                m_destroy = true;
+                m_shutDown = true;
             }
-
-            m_destroy = true;
-            m_shutDown = true;
         }
 
         public void Dispose()
         {
+            if (!m_shutDown)
+            {
+                Shutdown();
+            }
+
             Shaders.DestroyShaders();
 
             while (!m_joinable)
@@ -246,7 +276,6 @@ namespace Erde.Graphics.Internal
             };
 
             m_thread.Join();
-
         }
     }
 }

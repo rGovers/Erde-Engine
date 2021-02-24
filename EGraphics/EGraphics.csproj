@@ -81,6 +81,8 @@
     <Compile Include="Internal\Variables\NativeUniformBufferObject.cs" />
     <Compile Include="Internal\Variables\OpenTKModel.cs" />
     <Compile Include="Internal\Variables\OpenTKUniformBufferObject.cs" />
+    <Compile Include="IO\ColladaLoader.cs" />
+    <Compile Include="IO\OBJLoader.cs" />
     <Compile Include="IPipeline.cs" />
     <Compile Include="IPost.cs" />
     <Compile Include="IRenderObject.cs" />
@@ -92,6 +94,7 @@
     <Compile Include="Pipeline.cs" />
     <Compile Include="PipelineTime.cs" />
     <Compile Include="Rendering\Material.cs" />
+    <Compile Include="Rendering\MaterialRenderer.cs" />
     <Compile Include="Rendering\MeshRenderer.cs" />
     <Compile Include="Rendering\Renderer.cs" />
     <Compile Include="Rendering\Skybox.cs" />

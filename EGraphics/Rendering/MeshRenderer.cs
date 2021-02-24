@@ -1,6 +1,5 @@
 using Erde.Graphics.Lights;
 using Erde.Graphics.Variables;
-using OpenTK.Graphics.OpenGL;
 
 namespace Erde.Graphics.Rendering
 {
@@ -17,7 +16,10 @@ namespace Erde.Graphics.Rendering
             }
             set
             {
-                m_model = value;
+                lock (this)
+                {
+                    m_model = value;
+                }
             }
         }
 
@@ -25,7 +27,23 @@ namespace Erde.Graphics.Rendering
         {
             get
             {
-                return m_model.Indices;
+                if (m_model != null)
+                {
+                    lock (this)
+                    {
+                        return m_model.Indices;
+                    }
+                }
+
+                return 0;
+            }
+        }
+
+        public override bool Visible
+        {
+            get
+            {
+                return base.Visible && Indices > 0; 
             }
         }
 
@@ -37,23 +55,35 @@ namespace Erde.Graphics.Rendering
             }
         }
 
+        public MeshRenderer ()
+            : base()
+        {
+        }
+
         public override void Draw (Camera a_camera)
         {
-            m_model.Bind();
-
-            GL.DrawElements(BeginMode.Triangles, (int)m_model.Indices, DrawElementsType.UnsignedInt, 0);
+            if (m_model != null)
+            {
+                lock (this)
+                {
+                    GraphicsCommand.BindModel(m_model);
+                    
+                    GraphicsCommand.DrawElements(m_model.Indices);
+                }
+            }
         }
 
         public override void DrawShadow (Light a_light)
         {
-            m_model.Bind();
-
-            GL.DrawElements(BeginMode.Triangles, (int)m_model.Indices, DrawElementsType.UnsignedInt, 0);
-        }
-
-        public MeshRenderer ()
-            : base()
-        {
+            if (m_model != null)
+            {
+                lock (this)
+                {
+                    GraphicsCommand.BindModel(m_model);
+                    
+                    GraphicsCommand.DrawElements(m_model.Indices);
+                }
+            }
         }
     }
 }

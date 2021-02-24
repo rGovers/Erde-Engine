@@ -112,7 +112,7 @@ namespace Erde.Graphics
             }
 
             m_application.Update += SyncedUpdate;
-            m_application.Closing += ShutDown;
+            m_application.Closing += Shutdown;
 
             GraphicsCommand.Init(this);
         }
@@ -126,7 +126,7 @@ namespace Erde.Graphics
             m_internalPipeline.RemoveObject(a_object);
         }
 
-        void ShutDown ()
+        void Shutdown ()
         {
             m_internalPipeline.Shutdown();
         }

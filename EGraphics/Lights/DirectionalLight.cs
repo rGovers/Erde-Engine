@@ -75,6 +75,15 @@ namespace Erde.Graphics.Lights
             m_internalObject.BindShadowDrawing();
         }
 
+        public override Material BindLightDrawing()
+        {
+            return m_internalObject.BindLightDrawing();
+        }
+        public override Graphics.LightContainer GetLightData()
+        {
+            return m_internalObject.GetLightData();
+        }
+
         public static void ClearAssets ()
         {
             if (ProgramInstance != null)

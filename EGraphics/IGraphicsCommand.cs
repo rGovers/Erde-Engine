@@ -20,5 +20,8 @@ namespace Erde.Graphics
         void UpdateTextureRGBA(Texture a_texture, IntPtr a_data);
 
         void Draw();
+        
+        void DrawElements(uint a_indices);
+        void DrawElementsUInt(uint a_indices);
     }
 }

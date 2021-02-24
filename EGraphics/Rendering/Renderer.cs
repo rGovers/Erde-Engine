@@ -8,47 +8,11 @@ namespace Erde.Graphics.Rendering
     // Just used as something that classes that want to draw can inherit off
     public abstract class Renderer : Component, IRenderObject, IDisposable
     {
-        Material           m_material;
-
-        bool               m_visible;
-
-        protected Graphics m_graphics;
-
-        public abstract uint Indices
+        struct Cleanup
         {
-            get;
-        }
+            Material m_material;
 
-        public abstract float Radius
-        {
-            get;
-        }
-
-        public Graphics Graphics
-        {
-            get
-            {
-                return m_graphics;
-            }
-        }
-
-        public bool Visible
-        {
-            get
-            {
-                return m_visible && Indices > 0;
-            }
-            set
-            {
-                m_visible = value;
-            }
-        }
-
-        public struct Cleanup
-        {
-            private Material m_material;
-
-            private Renderer m_renderer;
+            Renderer m_renderer;
 
             public Material Material
             {
@@ -73,7 +37,7 @@ namespace Erde.Graphics.Rendering
             }
         }
 
-        public struct MaterialRebind : IRenderObject
+        struct MaterialRebind : IRenderObject
         {
             Material m_newMaterial;
             Renderer m_renderer;
@@ -116,6 +80,42 @@ namespace Erde.Graphics.Rendering
             public void RemoveObject (LinkedList<DrawingContainer> a_objects)
             {
                
+            }
+        }
+
+        Material           m_material;
+
+        bool               m_visible;
+
+        protected Graphics m_graphics;
+
+        public abstract uint Indices
+        {
+            get;
+        }
+
+        public abstract float Radius
+        {
+            get;
+        }
+
+        public Graphics Graphics
+        {
+            get
+            {
+                return m_graphics;
+            }
+        }
+
+        public virtual bool Visible
+        {
+            get
+            {
+                return m_visible;
+            }
+            set
+            {
+                m_visible = value;
             }
         }
 

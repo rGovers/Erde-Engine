@@ -138,7 +138,9 @@ namespace Erde.Application
 
         public Application (string a_title, e_WindowFlags a_displayMode, e_ApplicationType a_applicationType = e_ApplicationType.Managed)
         {
+#if DEBUG_INFO
             Debug.Assert(Instance == null);
+#endif
             Instance = this;
 
             m_title = a_title;

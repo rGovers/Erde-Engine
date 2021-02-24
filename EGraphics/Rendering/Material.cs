@@ -7,14 +7,22 @@ using System.Threading;
 
 namespace Erde.Graphics.Rendering
 {
+    public enum e_TransparencyMode
+    {
+        Opaque,
+        Transparent
+    };
+
     public class Material : IRenderObject, IGraphicsObject
     {
-        Program       m_shader;
+        Program            m_shader;
+        
+        e_TransparencyMode m_transparencyMode;
 
-        Pipeline      m_pipeline;
-        Graphics      m_graphics;
+        Pipeline           m_pipeline;
+        Graphics           m_graphics;
 
-        List<Binding> m_bindings;
+        List<Binding>      m_bindings;
 
         internal List<Binding> Bindings
         {
@@ -29,6 +37,14 @@ namespace Erde.Graphics.Rendering
             get
             {
                 return m_shader;
+            }
+        }
+
+        public e_TransparencyMode Transparency
+        {
+            get
+            {
+                return m_transparencyMode;
             }
         }
 
@@ -64,9 +80,11 @@ namespace Erde.Graphics.Rendering
             // m_pipeline.AddObject(bind);
         }
 
-        public Material (Program a_shader, Pipeline a_pipeline, Graphics a_graphics)
+        public Material (Program a_shader, e_TransparencyMode a_transparencyMode, Pipeline a_pipeline, Graphics a_graphics)
         {
             m_shader = a_shader;
+
+            m_transparencyMode = a_transparencyMode;
 
             m_bindings = new List<Binding>();
 

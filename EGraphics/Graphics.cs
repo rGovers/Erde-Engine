@@ -41,7 +41,7 @@ namespace Erde.Graphics
             public Matrix4 ViewProjection;
         }
 
-        internal struct LightContainer
+        public struct LightContainer
         {
             public Vector4 Color;
             public Vector4 Position;

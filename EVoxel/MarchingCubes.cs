@@ -350,9 +350,9 @@ namespace Erde.Voxel
             return p;
         }
 
-        private static Chunk.Vertex[] VertexList (IDistanceField a_distanceField, DistanceField<Chunk.Voxel>.Cell[] a_cells, int a_x, int a_y, int a_z, float a_iso, int a_cubeIndex)
+        private static Chunk.ChunkVertex[] VertexList (IDistanceField a_distanceField, DistanceField<Chunk.Voxel>.Cell[] a_cells, int a_x, int a_y, int a_z, float a_iso, int a_cubeIndex)
         {
-            Chunk.Vertex[] vertList = new Chunk.Vertex[12];
+            Chunk.ChunkVertex[] vertList = new Chunk.ChunkVertex[12];
 
             if ((EdgeTable[a_cubeIndex] & 1) != 0)
             {
@@ -562,7 +562,7 @@ namespace Erde.Voxel
             return vertList;
         }
 
-        public static void Polygonise (IDistanceField a_distanceField, DistanceField<Chunk.Voxel>.Cell[] a_cells, int a_x, int a_y, int a_z, float a_iso, List<Chunk.Vertex> a_verticies)
+        public static void Polygonise (IDistanceField a_distanceField, DistanceField<Chunk.Voxel>.Cell[] a_cells, int a_x, int a_y, int a_z, float a_iso, List<Chunk.ChunkVertex> a_verticies)
         {
             int cubeIndex = 0;
 
@@ -579,7 +579,7 @@ namespace Erde.Voxel
                 return;
             }
 
-            Chunk.Vertex[] vertList = VertexList(a_distanceField, a_cells, a_x, a_y, a_z, a_iso, cubeIndex);
+            Chunk.ChunkVertex[] vertList = VertexList(a_distanceField, a_cells, a_x, a_y, a_z, a_iso, cubeIndex);
 
             for (int i = 0; TriTable[cubeIndex][i] != -1; i += 3)
             {

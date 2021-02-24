@@ -1,10 +1,12 @@
 using Erde.Graphics;
 using Erde.Graphics.Internal.Shader;
 using Erde.Graphics.Lights;
+using Erde.Graphics.Rendering;
 using Erde.Graphics.Shader;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
+using System.Drawing;
 
 namespace Erde.Graphics.Internal.Lights
 {
@@ -82,8 +84,13 @@ namespace Erde.Graphics.Internal.Lights
                         new Vector4(-1.0f, -1.0f, -1.0f, 1.0f)
                     };
                     
-                    Matrix4 viewInv = cam.Transform.ToMatrix();
-                    Matrix4 projInv = Matrix4.Invert(cam.Projection);
+                    Matrix4 viewInv = Matrix4.Identity;
+                    Matrix4 projInv = Matrix4.Identity;
+                    lock (cam)
+                    {
+                        viewInv = cam.Transform.ToMatrix();
+                        projInv = Matrix4.Invert(cam.Projection);
+                    }
 
                     Vector3 position = Vector3.Zero;
 
@@ -131,6 +138,31 @@ namespace Erde.Graphics.Internal.Lights
 
                 GL.BindFramebuffer(FramebufferTarget.Framebuffer, m_shadowBuffer);
             }
+        }
+
+        public Material BindLightDrawing()
+        {
+            Material mat = DirectionalLight.LightMaterial;
+
+            OpenTKProgram program = (OpenTKProgram)mat.Program.InternalObject;
+            int handle = program.Handle;
+
+            GL.UseProgram(handle);
+
+            return mat;
+        }
+        public Graphics.LightContainer GetLightData()
+        {
+            Color color = m_light.Color;
+            Vector4 forward = new Vector4(m_light.Transform.Forward, 0);
+            float far = m_light.Far;
+
+            return new Graphics.LightContainer()
+            {
+                Color = new Vector4(color.R, color.G, color.B, 1.0f),
+                Direction = forward,
+                Far = far
+            };
         }
 
         public void ModifyObject()

@@ -1,4 +1,5 @@
-﻿using Erde.Graphics.Shader;
+﻿using Erde.Graphics.Rendering;
+using Erde.Graphics.Shader;
 using OpenTK;
 using System;
 using System.Collections.Generic;
@@ -43,6 +44,14 @@ namespace Erde.Graphics.Lights
         public abstract Matrix4 Projection
         {
             get;
+        }
+
+        public static LinkedList<Light> LightList
+        {
+            get
+            {
+                return m_lights;
+            }
         }
 
         public bool ShadowMapped
@@ -95,7 +104,7 @@ namespace Erde.Graphics.Lights
 
         void Dispose (bool a_state)
         {
-#if DEBUG
+#if DEBUG_INFO
             Tools.VerifyObjectMemoryState(this, a_state);
 #endif
 
@@ -122,12 +131,7 @@ namespace Erde.Graphics.Lights
 
         public abstract void BindShadowDrawing ();
 
-        public static LinkedList<Light> LightList
-        {
-            get
-            {
-                return m_lights;
-            }
-        }
+        public abstract Material BindLightDrawing ();
+        public abstract Graphics.LightContainer GetLightData ();
     }
 }

@@ -9,6 +9,7 @@ using OpenTK.Graphics.OpenGL;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Runtime.InteropServices;
 
 namespace Erde.Graphics.Internal
@@ -285,7 +286,7 @@ namespace Erde.Graphics.Internal
                                         Vector3 translation = transform.Translation;
                                         float radius = renderer.Radius;
 
-                                        if (!frustrum.CompareSphere(translation, radius))
+                                        if (radius != -1 && !frustrum.CompareSphere(translation, radius))
                                         {
                                             continue;
                                         }
@@ -389,10 +390,13 @@ namespace Erde.Graphics.Internal
             int progHandle = ((OpenTKProgram)m_defferedShader.InternalObject).Handle;
             GL.UseProgram(progHandle);
 
-            int loc = GL.GetUniformLocation(progHandle, "diffuse");
             GL.ActiveTexture(TextureUnit.Texture0);
             GL.BindTexture(TextureTarget.Texture2D, m_renderTarget.RenderTextures[0].Handle);
-            GL.Uniform1(loc, 0);
+            GL.Uniform1(1, 0);
+
+            // I do not need the vertex data however I apparently need data bound so just have an empty object
+            OpenTKPipeline pipeline = (OpenTKPipeline)m_graphics.Pipeline.InternalPipeline;
+            GL.BindVertexArray(pipeline.StaticVAO);
 
 #if DEBUG_INFO
             Pipeline.GLError("Graphics: Merge Binding: ");
@@ -404,7 +408,7 @@ namespace Erde.Graphics.Internal
             Pipeline.GLError("Graphics: Merging Deffered: ");
 #endif
         }
-
+        
         void LightingPass ()
         {
             GL.Disable(EnableCap.DepthTest);
@@ -412,38 +416,14 @@ namespace Erde.Graphics.Internal
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.One, BlendingFactor.One);
 
-            Material material = DirectionalLight.LightMaterial;
-
             foreach (Light light in Light.LightList)
             {
                 if (light.Draw)
                 {
                     UniformBufferObject ubo = m_graphics.LightBufferObject;
 
-                    int progHandle = ((OpenTKProgram)material.Program.InternalObject).Handle;
-
-                    if (light is DirectionalLight)
-                    {
-                        if (material == null)
-                        {
-                            continue;
-                        }
-
-                        GL.UseProgram(progHandle);
-
-                        DirectionalLight directionalLight = light as DirectionalLight;
-
-                        ubo.UpdateData(new Graphics.LightContainer()
-                        {
-                            Color = new Vector4(directionalLight.Color.R, directionalLight.Color.G, directionalLight.Color.B, 1.0f),
-                            Direction = new Vector4(directionalLight.Transform.Forward, 0.0f),
-                            Far = directionalLight.Far
-                        });
-                    }
-                    else
-                    {
-                        continue;
-                    }
+                    Material material = light.BindLightDrawing();
+                    ubo.UpdateData(light.GetLightData());
 
                     BindCamera();
                     BindTransform(light.Transform.ToMatrix(), light.Transform.RotationMatrix);
@@ -463,7 +443,7 @@ namespace Erde.Graphics.Internal
                     GL.Uniform1(2, cont.Textures++);
 
                     ubo.UpdateBuffer();
-                    // GL.UniformBlockBinding(progHandle, lightIndex, lightIndex);
+
                     GL.BindBufferBase(BufferRangeTarget.UniformBuffer, Material.LightUBOIndex, ((OpenTKUniformBufferObject)ubo.InternalObject).Handle);
 
                     light.BindShadowMap(cont);
@@ -506,7 +486,9 @@ namespace Erde.Graphics.Internal
 
                             GL.Viewport(0, 0, m_renderTarget.Width, m_renderTarget.Height);
 
-                            GL.BindFramebuffer(FramebufferTarget.FramebufferExt, m_renderTarget.BufferHandle);
+                            int renderTargetHandle = m_renderTarget.BufferHandle;
+
+                            GL.BindFramebuffer(FramebufferTarget.FramebufferExt, renderTargetHandle);
                             GL.DrawBuffers(m_drawBuffers.Length, m_drawBuffers);
 
                             GL.ClearColor(cam.ClearColor);
