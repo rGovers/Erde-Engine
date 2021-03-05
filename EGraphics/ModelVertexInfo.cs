@@ -49,7 +49,7 @@ namespace Erde.Graphics
                         Offset = Marshal.OffsetOf<T>(field.Name),
                         Count = 1,
                         Type = e_FieldType.Int
-                    })
+                    });
                 }  
                 else if (fieldType == typeof(Vector2))
                 {
