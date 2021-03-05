@@ -97,6 +97,7 @@
     <Compile Include="Rendering\MaterialRenderer.cs" />
     <Compile Include="Rendering\MeshRenderer.cs" />
     <Compile Include="Rendering\Renderer.cs" />
+    <Compile Include="Rendering\SkinnedMeshRenderer.cs" />
     <Compile Include="Rendering\Skybox.cs" />
     <Compile Include="Shader\GeometryShader.cs" />
     <Compile Include="Shader\IProgram.cs" />
@@ -110,6 +111,7 @@
     <Compile Include="Variables\Model.cs" />
     <Compile Include="Variables\MultiRenderTexture.cs" />
     <Compile Include="Variables\RenderTexture.cs" />
+    <Compile Include="Variables\Skeleton.cs" />
     <Compile Include="Variables\Texture.cs" />
     <Compile Include="Variables\UniformBufferObject.cs" />
     <Compile Include="Variables\UnsignedIntGValue.cs" />

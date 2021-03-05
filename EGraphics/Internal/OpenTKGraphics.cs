@@ -19,6 +19,7 @@ namespace Erde.Graphics.Internal
         Graphics                       m_graphics;
 
         LinkedList<DrawingContainer>   m_drawingObjects;
+        LinkedList<Renderer>           m_updateRenderers;
 
         ConcurrentQueue<IRenderObject> m_inputQueue;
         ConcurrentQueue<IRenderObject> m_disposalQueue;
@@ -41,6 +42,7 @@ namespace Erde.Graphics.Internal
             m_graphics = a_graphics;
 
             m_drawingObjects = new LinkedList<DrawingContainer>();
+            m_updateRenderers = new LinkedList<Renderer>();
 
             m_inputQueue = new ConcurrentQueue<IRenderObject>();
             m_disposalQueue = new ConcurrentQueue<IRenderObject>();
@@ -99,7 +101,7 @@ namespace Erde.Graphics.Internal
                     return;
                 }
 
-                obj.AddObject(m_drawingObjects);
+                obj.AddObject(m_drawingObjects, m_updateRenderers);
 
 #if DEBUG_INFO
                 Pipeline.GLError("Graphics: Input: ");
@@ -120,7 +122,7 @@ namespace Erde.Graphics.Internal
                     return;
                 }
 
-                obj.RemoveObject(m_drawingObjects);
+                obj.RemoveObject(m_drawingObjects, m_updateRenderers);
 
 #if DEBUG_INFO
                 Pipeline.GLError("Graphics: Disposal: ");
@@ -542,6 +544,11 @@ namespace Erde.Graphics.Internal
         {
             Input();
             Disposal();
+
+            foreach (Renderer renderer in m_updateRenderers)
+            {
+                renderer.Update();
+            }
 
             Draw();
         }

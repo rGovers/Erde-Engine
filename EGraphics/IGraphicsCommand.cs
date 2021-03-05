@@ -15,7 +15,9 @@ namespace Erde.Graphics
         void BindRenderTexture(RenderTexture a_renderTexture);
 
         void BindTexture(Program a_program, int a_binding, Texture a_texture, int a_index);
+        
         void BindMatrix4(Program a_program, int a_binding, Matrix4 a_matrix);
+        void BindMatrix4(Program a_program, int a_binding, Matrix4[] a_data);
 
         void UpdateTextureRGBA(Texture a_texture, IntPtr a_data);
 

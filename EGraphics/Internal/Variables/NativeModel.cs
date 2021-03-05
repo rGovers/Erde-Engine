@@ -52,7 +52,7 @@ namespace Erde.Graphics.Internal.Variables
             
         }
 
-        public void SetData<T>(T[] a_data, ushort[] a_indices) where T : struct
+        public void SetData<T>(T[] a_data, uint[] a_indices, ModelVertexInfo[] a_vertexInfo) where T : struct
         {
             uint length = (uint)a_data.LongLength;
             IntPtr data = Marshal.UnsafeAddrOfPinnedArrayElement(a_data, 0);

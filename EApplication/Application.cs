@@ -212,6 +212,11 @@ namespace Erde.Application
             m_internalApplication.Close();
         }
 
+        public void SetCursor(Cursor a_cursor)
+        {
+            m_internalApplication.SetCursor(a_cursor);
+        }
+
         public Vector2 PointToClient(Vector2 a_point)
         {
             return m_internalApplication.PointToClient(a_point);

@@ -68,7 +68,7 @@ namespace Erde.Graphics.Rendering
                 {
                     GraphicsCommand.BindModel(m_model);
                     
-                    GraphicsCommand.DrawElements(m_model.Indices);
+                    GraphicsCommand.DrawElementsUInt(m_model.Indices);
                 }
             }
         }
@@ -81,7 +81,7 @@ namespace Erde.Graphics.Rendering
                 {
                     GraphicsCommand.BindModel(m_model);
                     
-                    GraphicsCommand.DrawElements(m_model.Indices);
+                    GraphicsCommand.DrawElementsUInt(m_model.Indices);
                 }
             }
         }

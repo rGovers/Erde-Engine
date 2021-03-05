@@ -30,19 +30,18 @@ namespace Erde.Graphics.Variables
         }
     }
 
-    [StructLayout(LayoutKind.Sequential, Size=66)]
+    [StructLayout(LayoutKind.Sequential)]
     public struct SkinnedVertex
     {
         public Vector4 Position;
         public Vector3 Normal;
         public Vector2 TexCoords;
 
-        [MarshalAsAttribute(UnmanagedType.ByValArray, SizeConst = 5)]
-        public ushort[] Bones;
-        [MarshalAsAttribute(UnmanagedType.ByValArray, SizeConst = 5)]
-        public float[] Weights;
+        // Bad smell but until I think of a more elegant way of doing it.
+        public Vector4 Bones;
+        public Vector4 Weights;
 
-        public SkinnedVertex(Vector4 a_position, Vector3 a_normal, Vector2 a_texCoords, ushort[] a_bones, float[] a_weights)
+        public SkinnedVertex(Vector4 a_position, Vector3 a_normal, Vector2 a_texCoords, Vector4 a_bones, Vector4 a_weights)
         {
             Position = a_position;
             Normal = a_normal;
@@ -123,21 +122,56 @@ namespace Erde.Graphics.Variables
                         {
                             OBJLoader objLoader = new OBJLoader(m_fileName, m_fileSystem);
 
-                            m_model.SetData(objLoader.Vertices, objLoader.Indices, objLoader.Length);
+                            m_model.SetData(objLoader.Vertices, objLoader.Indices, objLoader.Length, ModelVertexInfo.GetVertexInfo<Vertex>());
 
                             break;
                         }
                         case ".dae":
                         {
-                            ColladaLoader colladaLoader = new ColladaLoader(m_fileName, m_fileSystem);
+                            ColladaLoader colladaLoader = new ColladaLoader(null, m_fileName, m_fileSystem);
+
+                            int modelCount = colladaLoader.ModelCount;
 
                             Vertex[] vertices;
-                            ushort[] indicies;
+                            uint[] indicies;
                             float len;
 
-                            colladaLoader.GenerateModelData(out vertices, out indicies, out len);
+                            float maxLen = 0.0f;
+                            List<Vertex> finalVertices = new List<Vertex>();
+                            List<uint> finalIndicies = new List<uint>();
+                            Dictionary<Vertex, uint> vertexLookup = new Dictionary<Vertex, uint>();
 
-                            m_model.SetData(vertices, indicies, len);
+                            for (int i = 0; i < modelCount; ++i)
+                            {
+                                colladaLoader.GenerateModelData(i, out vertices, out indicies, out len);
+
+                                maxLen = Math.Max(maxLen, len);
+
+                                uint indexCount = (uint)indicies.LongLength;
+
+                                for (uint j = 0; j < indexCount; ++j)
+                                {
+                                    Vertex vertex = vertices[indicies[j]];
+
+                                    if (vertexLookup.ContainsKey(vertex))
+                                    {
+                                        finalIndicies.Add(vertexLookup[vertex]);
+                                    }
+                                    else
+                                    {
+                                        uint index = (uint)finalVertices.Count;
+
+                                        vertexLookup.Add(vertex, index);
+                                        finalVertices.Add(vertex);
+                                        finalIndicies.Add(index);
+                                    }
+                                }
+                            }
+
+                            vertices = finalVertices.ToArray();
+                            indicies = finalIndicies.ToArray();
+
+                            m_model.SetData(vertices, indicies, maxLen, ModelVertexInfo.GetVertexInfo<Vertex>());
 
                             break;
                         }
@@ -148,13 +182,15 @@ namespace Erde.Graphics.Variables
 
         class ModelData<T> : IGraphicsObject where T : struct
         {
-            Model    m_model;
+            Model             m_model;
 
-            T[]      m_vertex;
-            ushort[] m_index;
-            float    m_radius;
+            T[]               m_vertex;
+            uint[]            m_index;
+            float             m_radius;
 
-            public ModelData(Model a_model, T[] a_vertex, ushort[] a_index, float a_radius)
+            ModelVertexInfo[] m_vertexInfo;
+
+            public ModelData(Model a_model, T[] a_vertex, uint[] a_index, float a_radius, ModelVertexInfo[] a_vertexInfo)
             {
                 m_model = a_model;
 
@@ -162,6 +198,8 @@ namespace Erde.Graphics.Variables
                 m_index = a_index;
 
                 m_radius = a_radius;   
+
+                m_vertexInfo = a_vertexInfo;
             }
 
             public void Dispose ()
@@ -174,7 +212,7 @@ namespace Erde.Graphics.Variables
 
             public void ModifyObject ()
             {
-                m_model.SetData(m_vertex, m_index, m_radius);
+                m_model.SetData(m_vertex, m_index, m_radius, m_vertexInfo);
             }
         }
 
@@ -185,6 +223,8 @@ namespace Erde.Graphics.Variables
         float    m_radius;
 
         Pipeline m_pipeline;
+
+        string   m_name;
 
         public uint Indices
         {
@@ -202,6 +242,18 @@ namespace Erde.Graphics.Variables
             }
         }
 
+        public string Name
+        {
+            get
+            {
+                return m_name;
+            }
+            internal set
+            {
+                m_name = value;
+            }
+        }
+
         public Model(Pipeline a_pipeline)
         {
             m_pipeline = a_pipeline;
@@ -209,6 +261,8 @@ namespace Erde.Graphics.Variables
             m_radius = 0.0f;
 
             m_indices = 0;
+
+            m_name = string.Empty;
 
             if (a_pipeline.ApplicationType == e_ApplicationType.Managed)
             {
@@ -242,9 +296,9 @@ namespace Erde.Graphics.Variables
             GC.SuppressFinalize(this);
         }
 
-        internal void SetData<T>(T[] a_vertices, ushort[] a_indices, float a_radius) where T : struct
+        internal void SetData<T>(T[] a_vertices, uint[] a_indices, float a_radius, ModelVertexInfo[] a_vertexInfo) where T : struct
         {
-            m_internalObject.SetData(a_vertices, a_indices);
+            m_internalObject.SetData(a_vertices, a_indices, a_vertexInfo);
 
             m_indices = (uint)a_indices.LongLength;
 
@@ -294,7 +348,7 @@ namespace Erde.Graphics.Variables
             };
 
             // Cubes indicie data
-            ushort[] indicies =
+            uint[] indicies =
             {
                 0,  6,  18, 0,  18, 12,
                 1,  4,  10, 1,  10, 7,
@@ -304,7 +358,7 @@ namespace Erde.Graphics.Variables
                 13, 22, 16, 13, 19, 22
             };
 
-            SetData(vertices, indicies, Vector3.One.Length);
+            SetData(vertices, indicies, Vector3.One.Length, ModelVertexInfo.GetVertexInfo<Vertex>());
         }
         
         public static Model CreatePrimitive (e_PrimitiveType a_primitive, Pipeline a_pipeline)
@@ -326,9 +380,13 @@ namespace Erde.Graphics.Variables
             return model;
         }
 
-        public void SetModelData<T>(T[] a_vertex, ushort[] a_index, float a_radius) where T : struct
+        public void SetModelData<T>(T[] a_vertex, uint[] a_index, float a_radius) where T : struct
         {
-            m_pipeline.AddObject(new ModelData<T>(this, a_vertex, a_index, a_radius));
+            SetModelData<T>(a_vertex, a_index, a_radius, ModelVertexInfo.GetVertexInfo<T>());
+        }
+        public void SetModelData<T>(T[] a_vertex, uint[] a_index, float a_radius, ModelVertexInfo[] a_vertexInfo) where T : struct
+        {
+            m_pipeline.AddObject(new ModelData<T>(this, a_vertex, a_index, a_radius, a_vertexInfo));
         }
 
         public void ModifyObject ()

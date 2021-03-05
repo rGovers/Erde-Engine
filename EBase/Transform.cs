@@ -1,16 +1,18 @@
 ﻿using OpenTK;
+using System.Collections.Generic;
 
 namespace Erde
 {
     public class Transform : Component
     {
-        Transform  m_parent;
+        Transform       m_parent;
+        List<Transform> m_children;
 
-        Vector3    m_translation;
-        Vector3    m_scale;
-        Quaternion m_rotation;
+        Vector3         m_translation;
+        Vector3         m_scale;
+        Quaternion      m_rotation;
 
-        byte       m_static;
+        byte            m_static;
 
         public bool Static
         {
@@ -35,6 +37,8 @@ namespace Erde
         public Transform ()
         {
             m_parent = null;
+            m_children = new List<Transform>();
+
             m_translation = Vector3.Zero;
             m_scale = Vector3.One;
             m_rotation = Quaternion.Identity;
@@ -48,7 +52,31 @@ namespace Erde
             }
             set
             {
+                if (m_parent != null)
+                {
+                    lock (m_parent.GameObject)
+                    {
+                        m_parent.m_children.Remove(this);
+                    }
+                }
+
                 m_parent = value;
+
+                if (m_parent != null)
+                {
+                    lock (m_parent.GameObject)
+                    {
+                        m_parent.m_children.Add(this);
+                    }
+                }
+            }
+        }
+
+        public IEnumerable<Transform> Children
+        {
+            get
+            {
+                return m_children;
             }
         }
 

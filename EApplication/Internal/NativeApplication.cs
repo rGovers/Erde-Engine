@@ -111,6 +111,11 @@ namespace Erde.Application.Internal
             return a_point;
         }
 
+        public void SetCursor(Cursor a_cursor)
+        {
+            // TODO: Implement me
+        }
+
         public void ResizeWindow(Vector2 a_size)
         {
             ApplicationResize(m_handle, (int)a_size.X, (int)a_size.Y);

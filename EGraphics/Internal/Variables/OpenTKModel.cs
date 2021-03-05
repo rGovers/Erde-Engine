@@ -65,9 +65,13 @@ namespace Erde.Graphics.Internal.Variables
         public void Bind()
         {
             GL.BindVertexArray(m_vao);
+
+            // I feel dirty for this
+            GL.VertexAttrib4(3, 0.0f, 0.0f, 0.0f, 0.0f);
+            GL.VertexAttrib4(4, 0.0f, 0.0f, 0.0f, 0.0f);
         }
 
-        public void SetData<T>(T[] a_data, ushort[] a_indices) where T : struct
+        public void SetData<T>(T[] a_data, uint[] a_indices, ModelVertexInfo[] a_vertexInfo) where T : struct
         {
             if (m_vao == -1)
             {
@@ -84,20 +88,24 @@ namespace Erde.Graphics.Internal.Variables
             GL.BufferData(BufferTarget.ArrayBuffer, a_data.Length * vertexSize, a_data, BufferUsageHint.StaticDraw);
 
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, m_ibo);
-            GL.BufferData(BufferTarget.ElementArrayBuffer, a_indices.Length * sizeof(ushort), a_indices, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, a_indices.Length * sizeof(uint), a_indices, BufferUsageHint.StaticDraw);
 
-            ModelVertexInfo[] vertexInfo = ModelVertexInfo.GetVertexInfo<T>();
-            int len = vertexInfo.Length;
-
+            int len = a_vertexInfo.Length;
             for (int i = 0; i < len; ++i)
             {
                 VertexAttribPointerType fieldType = VertexAttribPointerType.Float;
 
-                switch (vertexInfo[i].Type)
+                switch (a_vertexInfo[i].Type)
                 {
                     case e_FieldType.Float:
                     {
                         fieldType = VertexAttribPointerType.Float;
+
+                        break;
+                    }
+                    case e_FieldType.Int:
+                    {
+                        fieldType = VertexAttribPointerType.Int;
 
                         break;
                     }
@@ -107,10 +115,16 @@ namespace Erde.Graphics.Internal.Variables
 
                         break;
                     }
+                    case e_FieldType.UnsignedByte:
+                    {
+                        fieldType = VertexAttribPointerType.UnsignedByte;
+
+                        break;
+                    }
                 }
 
                 GL.EnableVertexAttribArray(i);
-                GL.VertexAttribPointer(i, (int)vertexInfo[i].Count, fieldType, false, vertexSize, vertexInfo[i].Offset);
+                GL.VertexAttribPointer(i, (int)a_vertexInfo[i].Count, fieldType, false, vertexSize, a_vertexInfo[i].Offset);
             }
         }
     }

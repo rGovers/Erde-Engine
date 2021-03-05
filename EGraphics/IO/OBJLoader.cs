@@ -12,7 +12,7 @@ namespace Erde.Graphics.IO
     public class OBJLoader
     {
         List<Vertex> m_vertices;
-        List<ushort> m_indices;
+        List<uint> m_indices;
 
         float        m_length;
 
@@ -23,7 +23,7 @@ namespace Erde.Graphics.IO
                 return m_vertices.ToArray();
             }
         }
-        public ushort[] Indices
+        public uint[] Indices
         {
             get
             {
@@ -42,7 +42,7 @@ namespace Erde.Graphics.IO
         public OBJLoader(string a_fileName, IFileSystem a_fileSystem)
         {
             m_vertices = new List<Vertex>();
-            m_indices = new List<ushort>();
+            m_indices = new List<uint>();
 
             byte[] bytes;
             if (a_fileSystem.Load(a_fileName, out bytes))
@@ -53,7 +53,7 @@ namespace Erde.Graphics.IO
                 List<Vector3> vertexNormal = new List<Vector3>();
                 List<Vector2> vertexTextureCoords = new List<Vector2>();
 
-                Dictionary<Vertex, ushort> vertexLookup = new Dictionary<Vertex, ushort>();
+                Dictionary<Vertex, uint> vertexLookup = new Dictionary<Vertex, uint>();
 
                 float lengthSqr = 0.0f;
 
@@ -145,7 +145,7 @@ namespace Erde.Graphics.IO
                                     vert.Normal = vertexNormal[int.Parse(ind[2]) - 1];
                                 }
 
-                                ushort val = 0;
+                                uint val = 0;
 
                                 if (!vertexLookup.TryGetValue(vert, out val))
                                 {

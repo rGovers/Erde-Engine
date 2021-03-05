@@ -1,6 +1,7 @@
 ﻿using Erde.Graphics;
 using Erde.Graphics.Lights;
 using Erde.Graphics.Rendering;
+using Erde.Graphics.Variables;
 using OpenTK;
 using OpenTK.Graphics.OpenGL;
 using System;
@@ -92,71 +93,13 @@ namespace Erde.Voxel
             }
         }
 
-        internal class MeshGenerator : IGraphicsObject
-        {
-            Chunk             m_voxelObject;
-            List<ChunkVertex> m_verticies;
-            List<uint>        m_indices;
-
-            public List<ChunkVertex> Verticies
-            {
-                get
-                {
-                    return m_verticies;
-                }
-            }
-            
-            public List<uint> Indicies
-            {
-                get
-                {
-                    return m_indices;
-                }
-            }
-
-            public Chunk Object
-            {
-                get
-                {
-                    return m_voxelObject;
-                }
-            }
-
-            public MeshGenerator (Chunk a_voxelObject)
-            {
-                m_voxelObject = a_voxelObject;
-                m_verticies = new List<ChunkVertex>();
-                m_indices = new List<uint>();
-            }
-
-            public void ModifyObject ()
-            {
-                m_voxelObject.PopulateBuffers(this);
-            }
-
-            public void DisposeObject ()
-            {
-            }
-
-            public void Dispose ()
-            {
-            }
-        }
-
         DistanceField<Voxel> m_distanceField;
 
         byte                 m_update;
 
-        int                  m_vbo;
-        int                  m_ibo;
-
-        int                  m_vao;
-
-        uint                 m_indices;
+        Model                m_model;
 
         Pipeline             m_pipeline;
-
-        float                m_radius;
 
         e_UpdateFlag         m_updateFlag;
 
@@ -236,7 +179,7 @@ namespace Erde.Voxel
         {
             get
             {
-                return m_radius;
+                return m_model.Radius;
             }
         }
 
@@ -244,7 +187,7 @@ namespace Erde.Voxel
         {
             get
             {
-                return m_indices;
+                return m_model.Indices;
             }
         }
 
@@ -252,7 +195,7 @@ namespace Erde.Voxel
         {
             get
             {
-                return m_indices > 0 && base.Visible;
+                return base.Visible && Indices > 0;
             }
         }
 
@@ -264,10 +207,10 @@ namespace Erde.Voxel
 
             m_update = 0;
 
-            m_pipeline.AddObject(this);
+            m_model = new Model(m_pipeline);
         }
 
-        MeshGenerator UpdateMesh ()
+        public void UpdateData ()
         {
             int width = m_distanceField.Width;
             int height = m_distanceField.Height;
@@ -277,13 +220,10 @@ namespace Erde.Voxel
             int halfHeight = height / 2;
             int halfDepth = depth / 2;
 
-            MeshGenerator gen = new MeshGenerator(this);
-
             DistanceField<Voxel>.Cell[] voxels = new DistanceField<Voxel>.Cell[8];
-
             DistanceField<Voxel>.Cell[] cells = m_distanceField.Cells;
 
-            List<ChunkVertex> vertices = new List<ChunkVertex>();
+            List<ChunkVertex> dirtyVerts = new List<ChunkVertex>();
 
             for (int x = 0; x < m_distanceField.Width - 1; ++x)
             {
@@ -304,23 +244,23 @@ namespace Erde.Voxel
                         voxels[6] = cells[(z1 * width * height) + (y1 * width) + x1];
                         voxels[7] = cells[(z1 * width * height) + (y1 * width) + x];
                         
-                        MarchingCubes.Polygonise(m_distanceField, voxels, x - halfWidth, y - halfHeight, z - halfDepth, 0.0f, vertices);
+                        MarchingCubes.Polygonise(m_distanceField, voxels, x - halfWidth, y - halfHeight, z - halfDepth, 0.0f, dirtyVerts);
                     }
                 }
             }
 
-            int count = vertices.Count;
+            int count = dirtyVerts.Count;
 
-            gen.Indicies.Capacity = count;
-            gen.Verticies.Capacity = count / 3;
+            List<uint> indicies = new List<uint>();
+            List<ChunkVertex> vertices = new List<ChunkVertex>();
 
             Dictionary<ChunkVertex, uint> values = new Dictionary<ChunkVertex, uint>();
 
             for (int i = 0; i < count; i += 3)
             {
-                ChunkVertex vertA = vertices[i];
-                ChunkVertex vertB = vertices[i + 1];
-                ChunkVertex vertC = vertices[i + 2];
+                ChunkVertex vertA = dirtyVerts[i];
+                ChunkVertex vertB = dirtyVerts[i + 1];
+                ChunkVertex vertC = dirtyVerts[i + 2];
 
                 Vector3 v1 = vertC.Position.Xyz - vertA.Position.Xyz;
                 Vector3 v2 = vertB.Position.Xyz - vertA.Position.Xyz;
@@ -330,57 +270,61 @@ namespace Erde.Voxel
                 uint index;
                 if (values.TryGetValue(vertA, out index))
                 {
-                    ChunkVertex vertex = gen.Verticies[(int)index];
+                    ChunkVertex vertex = vertices[(int)index];
                     vertex.Normal += normal;
-                    gen.Verticies[(int)index] = vertex;
-                    gen.Indicies.Add(index);
+                    vertices[(int)index] = vertex;
+                    indicies.Add(index);
                 }
                 else
                 {
-                    index = (uint)gen.Verticies.Count;
+                    index = (uint)vertices.Count;
                     vertA.Normal = normal;
-                    gen.Indicies.Add(index);
+                    indicies.Add(index);
                     values.Add(vertA, index);
-                    gen.Verticies.Add(vertA);
+                    vertices.Add(vertA);
                 }
+
                 if (values.TryGetValue(vertB, out index))
                 {
-                    ChunkVertex vertex = gen.Verticies[(int)index];
+                    ChunkVertex vertex = vertices[(int)index];
                     vertex.Normal += normal;
-                    gen.Verticies[(int)index] = vertex;
-                    gen.Indicies.Add(index);
+                    vertices[(int)index] = vertex;
+                    indicies.Add(index);
                 }
                 else
                 {
-                    index = (uint)gen.Verticies.Count;
+                    index = (uint)vertices.Count;
                     vertB.Normal = normal;
-                    gen.Indicies.Add(index);
+                    indicies.Add(index);
                     values.Add(vertB, index);
-                    gen.Verticies.Add(vertB);
+                    vertices.Add(vertB);
                 }
+
                 if (values.TryGetValue(vertC, out index))
                 {
-                    ChunkVertex vertex = gen.Verticies[(int)index];
+                    ChunkVertex vertex = vertices[(int)index];
                     vertex.Normal += normal;
-                    gen.Verticies[(int)index] = vertex;
-                    gen.Indicies.Add(index);
+                    vertices[(int)index] = vertex;
+                    indicies.Add(index);
                 }
                 else
                 {
-                    index = (uint)gen.Verticies.Count;
+                    index = (uint)vertices.Count;
                     vertC.Normal = normal;
-                    gen.Indicies.Add(index);
+                    indicies.Add(index);
                     values.Add(vertC, index);
-                    gen.Verticies.Add(vertC);
+                    vertices.Add(vertC);
                 }
             }
 
             float maxRadius = 0.0f;
-            for (int i = 0; i < gen.Verticies.Count; ++i)
+            int vertexCount = vertices.Count;
+
+            for (int i = 0; i < vertexCount; ++i)
             {
-                ChunkVertex vert = gen.Verticies[i];
+                ChunkVertex vert = vertices[i];
                 vert.Normal = vert.Normal.Normalized();
-                gen.Verticies[i] = vert;
+                vertices[i] = vert;
 
                 float distSqr = vert.Position.LengthSquared;
                 if (distSqr > maxRadius)
@@ -389,71 +333,54 @@ namespace Erde.Voxel
                 }
             }
 
-            Dictionary<ChunkVertex, uint> vertLookup = new Dictionary<ChunkVertex, uint>();
+            float radius = (float)Math.Sqrt(maxRadius);
 
-            m_radius = (float)Math.Sqrt(maxRadius);
+            ModelVertexInfo[] vertexInfoCollection = new ModelVertexInfo[3];
             
-            return gen;
-        }
+            vertexInfoCollection[0].Offset = Marshal.OffsetOf<ChunkVertex>("Position");
+            vertexInfoCollection[0].Count = 4;
+            vertexInfoCollection[0].Type = e_FieldType.Float;
 
-        public void UpdateData ()
-        {
-            m_pipeline.AddObject(UpdateMesh());
-        }
+            vertexInfoCollection[1].Offset = Marshal.OffsetOf<ChunkVertex>("Normal");
+            vertexInfoCollection[1].Count = 3;
+            vertexInfoCollection[1].Type = e_FieldType.Float;
 
-        // Takes the data from UpdateMesh and sends it over to the gpu
-        internal void PopulateBuffers (MeshGenerator a_generated)
-        {
-            // Updates the number of indicies in the mesh
-            m_indices = (uint)a_generated.Indicies.Count;
+            vertexInfoCollection[2].Offset = Marshal.OffsetOf<ChunkVertex>("Color");
+            vertexInfoCollection[2].Count = 4;
+            vertexInfoCollection[2].Type = e_FieldType.UnsignedByte;
 
-            // Checks if there is suffient indicies in the mesh
-            if (m_indices != 0)
-            {   
-                GL.BindVertexArray(m_vao);
-
-                GL.BindBuffer(BufferTarget.ArrayBuffer, m_vbo);
-                int verticiesSize = a_generated.Verticies.Count * Marshal.SizeOf<ChunkVertex>();
-                // Sends the updated vertex data over to the gpu
-                GL.BufferData(BufferTarget.ArrayBuffer, verticiesSize, a_generated.Verticies.ToArray(), BufferUsageHint.StaticDraw);
-
-                GL.BindBuffer(BufferTarget.ElementArrayBuffer, m_ibo);
-                int indiciesSize = (int)m_indices * sizeof(uint);
-                GL.BufferData(BufferTarget.ElementArrayBuffer, indiciesSize, a_generated.Indicies.ToArray(), BufferUsageHint.StaticDraw);
-            }
+            m_model.SetModelData<ChunkVertex>(vertices.ToArray(), indicies.ToArray(), radius, vertexInfoCollection);
         }
 
         public override void Draw (Camera a_camera)
         {
-            GL.BindVertexArray(m_vao);
+            if (m_model != null)
+            {
+                lock (this)
+                {
+                    GraphicsCommand.BindModel(m_model);
 
-            GL.DrawElements(PrimitiveType.Triangles, (int)m_indices, DrawElementsType.UnsignedInt, 0);
+                    GraphicsCommand.DrawElementsUInt(m_model.Indices);
+                }
+            }
         }
 
         public override void DrawShadow (Light a_light)
         {
-            GL.BindVertexArray(m_vao);
+            if (m_model != null)
+            {
+                lock (this)
+                {
+                    GraphicsCommand.BindModel(m_model);
 
-            GL.DrawElements(PrimitiveType.Triangles, (int)m_indices, DrawElementsType.UnsignedInt, 0);
+                    GraphicsCommand.DrawElementsUInt(m_model.Indices);
+                }
+            }
         }
 
         public void ModifyObject ()
         {
-            m_vbo = GL.GenBuffer();
-            m_ibo = GL.GenBuffer();
-            m_vao = GL.GenVertexArray();
 
-            GL.BindVertexArray(m_vao);
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, m_ibo);
-            GL.BindBuffer(BufferTarget.ArrayBuffer, m_vbo);
-
-            int sizeOfVertex = Marshal.SizeOf<ChunkVertex>();
-            GL.EnableVertexAttribArray(0);
-            GL.EnableVertexAttribArray(1);
-            GL.EnableVertexAttribArray(2);
-            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, sizeOfVertex, Marshal.OffsetOf<ChunkVertex>("Position"));
-            GL.VertexAttribPointer(1, 3, VertexAttribPointerType.Float, false, sizeOfVertex, Marshal.OffsetOf<ChunkVertex>("Normal"));
-            GL.VertexAttribPointer(2, 4, VertexAttribPointerType.UnsignedByte, true, sizeOfVertex, Marshal.OffsetOf<ChunkVertex>("Color"));
         }
 
         void Dispose (bool a_state)
@@ -463,6 +390,14 @@ namespace Erde.Voxel
 #endif
 
             m_pipeline.RemoveObject(this);
+
+            if (m_model != null)
+            {
+                lock (this)
+                {
+                    m_model.Dispose();
+                }
+            }
         }
 
         ~Chunk ()
@@ -472,7 +407,7 @@ namespace Erde.Voxel
 
         public override void Dispose ()
         {
-            base.Dispose();
+            base.Dispose();   
 
             Dispose(true);
             GC.SuppressFinalize(this);
@@ -480,8 +415,7 @@ namespace Erde.Voxel
 
         public void DisposeObject ()
         {
-            GL.DeleteBuffer(m_vbo);
-            GL.DeleteVertexArray(m_vao);
+            
         }
     }
 }

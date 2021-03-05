@@ -48,7 +48,7 @@ namespace Erde.Graphics.Rendering
                 m_newMaterial = a_newMaterial;
             }
 
-            public void AddObject (LinkedList<DrawingContainer> a_objects)
+            public void AddObject (LinkedList<DrawingContainer> a_objects, LinkedList<Renderer> a_renderers)
             {
                 // Finds the renderer linked to the old material and removes it
                 if (m_renderer.Material != null)
@@ -74,10 +74,10 @@ namespace Erde.Graphics.Rendering
                 // Sets the new material
                 m_renderer.Material = m_newMaterial;
 
-                m_renderer.AddObject(a_objects);
+                m_renderer.AddObject(a_objects, a_renderers);
             }
 
-            public void RemoveObject (LinkedList<DrawingContainer> a_objects)
+            public void RemoveObject (LinkedList<DrawingContainer> a_objects, LinkedList<Renderer> a_renderers)
             {
                
             }
@@ -131,8 +131,8 @@ namespace Erde.Graphics.Rendering
             }
         }
 
+        public virtual void Update () { }
         public abstract void Draw (Camera a_camera);
-
         public abstract void DrawShadow (Light a_light);
 
         public void SetMaterial (Material a_material, Graphics a_graphics)
@@ -168,7 +168,7 @@ namespace Erde.Graphics.Rendering
             GC.SuppressFinalize(this);
         }
 
-        public void AddObject (LinkedList<DrawingContainer> a_objects)
+        public virtual void AddObject (LinkedList<DrawingContainer> a_objects, LinkedList<Renderer> a_renderers)
         {
             if (m_material == null)
             {
@@ -197,7 +197,7 @@ namespace Erde.Graphics.Rendering
             });
             a_objects.AddLast(cont);
         }
-        public void RemoveObject (LinkedList<DrawingContainer> a_objects)
+        public virtual void RemoveObject (LinkedList<DrawingContainer> a_objects, LinkedList<Renderer> a_renderers)
         {
             foreach (DrawingContainer cont in a_objects)
             {

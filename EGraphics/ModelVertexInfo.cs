@@ -9,8 +9,9 @@ namespace Erde.Graphics
     public enum e_FieldType : int
     {
         Float = 0,
-        UnsignedInt = 1,
-        UnsignedByte = 2,
+        Int = 1,
+        UnsignedInt = 2,
+        UnsignedByte = 3,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -40,7 +41,16 @@ namespace Erde.Graphics
                         Count = 1,
                         Type = e_FieldType.Float
                     });
-                }
+                } 
+                else if (fieldType == typeof(int))
+                {
+                    vertexInfoCollection.Add(new ModelVertexInfo()
+                    {
+                        Offset = Marshal.OffsetOf<T>(field.Name),
+                        Count = 1,
+                        Type = e_FieldType.Int
+                    })
+                }  
                 else if (fieldType == typeof(Vector2))
                 {
                     vertexInfoCollection.Add(new ModelVertexInfo()

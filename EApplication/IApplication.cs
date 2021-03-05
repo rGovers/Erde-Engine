@@ -28,6 +28,8 @@ namespace Erde.Application
 
         void Close();
 
+        void SetCursor(Cursor a_cursor);
+
         Vector2 PointToClient(Vector2 a_point);
 
         void ResizeWindow(Vector2 a_size);

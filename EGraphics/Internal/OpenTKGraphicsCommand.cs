@@ -74,9 +74,26 @@ namespace Erde.Graphics.Internal
             Pipeline.GLError("Graphics Command: Bind Texture: ");
 #endif
         }
+
         public void BindMatrix4(Program a_program, int a_binding, Matrix4 a_matrix)
         {
             GL.UniformMatrix4(a_binding, false, ref a_matrix);
+
+#if DEBUG_INFO
+            Pipeline.GLError("Graphics Command: Bind Matrix4: ");
+#endif
+        }
+        public void BindMatrix4(Program a_program, int a_binding, Matrix4[] a_data)
+        {
+            // For some reason no way to pass arrays that I am aware of.
+            // The filthy way it is.
+            // There are better ways but involve vodoo trickery to the extent of my knowledge
+            // NOTE: Keep track of traffic if it becomes an issue vodoo it
+            int count = a_data.Length;
+            for (int i = 0; i < count; ++i)
+            {
+                GL.UniformMatrix4(a_binding + i, false, ref a_data[i]);
+            }
 
 #if DEBUG_INFO
             Pipeline.GLError("Graphics Command: Bind Matrix4: ");

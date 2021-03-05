@@ -48,9 +48,14 @@ namespace Erde.Graphics
         {
             InternalObject.BindTexture(a_program, a_binding, a_texture, a_index);
         }
+        
         public static void BindMatrix4(Program a_program, int a_binding, Matrix4 a_matrix)
         {
             InternalObject.BindMatrix4(a_program, a_binding, a_matrix);
+        }
+        public static void BindMatrix4(Program a_program, int a_binding, Matrix4[] a_data)
+        {
+            InternalObject.BindMatrix4(a_program, a_binding, a_data);
         }
 
         public static void UpdateTextureRGBA(Texture a_texture, IntPtr a_data)

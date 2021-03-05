@@ -57,6 +57,11 @@ namespace Erde.Application.Internal
             ProcessEvents();
         }
 
+        public void SetCursor(Cursor a_cursor)
+        {
+            Cursor = new MouseCursor(a_cursor.ActiveX, a_cursor.ActiveY, a_cursor.Width, a_cursor.Height, a_cursor.Bytes);
+        }
+
         public Vector2 PointToClient(Vector2 a_point)
         {
             Point point = PointToClient(new Point((int)a_point.X, (int)a_point.Y));

@@ -41,13 +41,29 @@ void main()
 #extension GL_ARB_separate_shader_objects : enable
 
 layout(location = 0) in vec4 position;
+layout(location = 3) in vec4 bones;
+layout(location = 4) in vec4 weights;
 
 layout(location = 0) uniform mat4 lvp;
 layout(location = 1) uniform mat4 world;
 
+layout(location = 128) uniform mat4 BoneMatrices[127];
+
 void main()
 {
-    gl_Position = lvp * world * position;
+    if (weights == vec4(0, 0, 0, 0))
+    {
+        gl_Position = lvp * world * position;
+    }
+    else
+    {
+        mat4 mat = BoneMatrices[int(bones.x)] * weights.x;
+        mat += BoneMatrices[int(bones.y)] * weights.y;
+        mat += BoneMatrices[int(bones.z)] * weights.z;
+        mat += BoneMatrices[int(bones.w)] * weights.w;
+
+        gl_Position = lvp * world * mat * position;
+    }
 }";
         public const string QUAD_VERTEX = @"
 #version 450

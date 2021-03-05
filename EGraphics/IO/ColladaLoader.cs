@@ -100,8 +100,41 @@ namespace Erde.Graphics.IO
             public ControllerSkin Skin;
         }
 
-        List<Geometry>   m_geometry;
-        List<Controller> m_controller;
+        class SceneNode
+        {   
+            public string ID;
+            public string Name;
+            public string Type;
+            public SceneNode Parent;
+            public List<SceneNode> Children;
+            public Matrix4 Transform;
+            public string SID;
+        }
+
+        struct Scene
+        {
+            public string ID;
+            public string Name;
+            public List<SceneNode> Nodes;
+        }
+
+        Skeleton                         m_skeleton;
+
+        Dictionary<string, SkeletonNode> m_skeletonNameLookup;
+
+        List<SkeletonNode>               m_skeletonNodes;
+
+        List<Geometry>                   m_geometry;
+        List<Controller>                 m_controller;
+        List<Scene>                      m_scene;
+
+        public int ModelCount
+        {
+            get
+            {
+                return m_geometry.Count;
+            }
+        }
 
         MeshAccessor LoadMeshAccessor(XmlNode a_parentNode)
         {
@@ -783,6 +816,143 @@ namespace Erde.Graphics.IO
             }
         }
 
+        SceneNode LoadSceneNode(XmlNode a_node, SceneNode a_parentSceneNode)
+        {
+            SceneNode sceneNode = new SceneNode();
+            sceneNode.Children = new List<SceneNode>();
+
+            foreach (XmlAttribute att in a_node.Attributes)
+            {
+                switch (att.Name)
+                {
+                    case "id":
+                    {
+                        sceneNode.ID = att.Value;
+
+                        break;
+                    }
+                    case "name":
+                    {
+                        sceneNode.Name = att.Value;
+
+                        break;
+                    }
+                    case "type":
+                    {
+                        sceneNode.Type = att.Value;
+
+                        break;
+                    }
+                    case "sid":
+                    {
+                        sceneNode.SID = att.Value;
+
+                        break;
+                    }
+                }
+            }
+
+            for (XmlNode node = a_node.FirstChild; node != null; node = node.NextSibling)
+            {
+                switch (node.Name)
+                {
+                    case "matrix":
+                    {
+                        Matrix4 mat = Matrix4.Identity;
+
+                        string str = node.InnerText;
+                        string[] lines = str.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                        // TODO: Double check matrix orientation 
+                        for (int x = 0; x < 4; ++x)
+                        {
+                            for (int y = 0; y < 4; ++y)
+                            {
+                                mat[x, y] = float.Parse(lines[x + (y * 4)]);
+                            }
+                        }
+
+                        sceneNode.Transform = mat;
+
+                        break;
+                    }
+                    case "node":
+                    {
+                        sceneNode.Children.Add(LoadSceneNode(node, sceneNode));
+
+                        break;
+                    }
+                }
+            }
+
+            if (a_parentSceneNode != null)
+            {
+                sceneNode.Parent = a_parentSceneNode;
+            }
+
+            return sceneNode;
+        }
+
+        Scene LoadScene(XmlNode a_parentNode)
+        {
+            Scene scene = new Scene();
+            scene.Nodes = new List<SceneNode>();
+
+            for (XmlNode node = a_parentNode.FirstChild; node != null; node = node.NextSibling)
+            {
+                switch (node.Name)
+                {
+                    case "node":
+                    {
+                        SceneNode sceneNode = LoadSceneNode(node, null);
+
+                        scene.Nodes.Add(sceneNode);
+
+                        break;
+                    }
+                }
+            }
+
+            return scene;
+        }
+
+        void LoadSceneLibrary(XmlNode a_parentNode)
+        {
+            for (XmlNode node = a_parentNode.FirstChild; node != null; node = node.NextSibling)
+            {
+                switch (node.Name)
+                {
+                    case "visual_scene":
+                    {
+                        Scene scene = LoadScene(node);
+
+                        foreach (XmlAttribute att in node.Attributes)
+                        {
+                            switch (att.Name)
+                            {
+                                case "id":
+                                {
+                                    scene.ID = att.Value;
+
+                                    break;
+                                }
+                                case "name":
+                                {
+                                    scene.Name = att.Value;
+
+                                    break;
+                                }
+                            }
+                        }
+
+                        m_scene.Add(scene);
+
+                        break;
+                    }
+                }
+            }
+        }
+
         void LoadData(XmlNode a_parentNode)
         {
             for (XmlNode node = a_parentNode.FirstChild; node != null; node = node.NextSibling)
@@ -801,14 +971,27 @@ namespace Erde.Graphics.IO
 
                         break;
                     }
+                    case "library_visual_scenes":
+                    {
+                        LoadSceneLibrary(node);
+
+                        break;
+                    }
                 }
             }
         }
 
-        public ColladaLoader(string a_fileName, IFileSystem a_fileSystem)
+        public ColladaLoader(Skeleton a_skeleton, string a_fileName, IFileSystem a_fileSystem)
         {
+            m_skeleton = a_skeleton;
+
             m_geometry = new List<Geometry>();
             m_controller = new List<Controller>();
+            m_scene = new List<Scene>();
+
+            m_skeletonNodes = new List<SkeletonNode>();
+
+            m_skeletonNameLookup = new Dictionary<string, SkeletonNode>();
 
             Stream stream;
 
@@ -877,7 +1060,7 @@ namespace Erde.Graphics.IO
             return values;
         }
 
-        internal void GenerateModelData(out Vertex[] a_vertices, out ushort[] a_indices, out float a_length)
+        internal void GenerateModelData(int a_index, out Vertex[] a_vertices, out uint[] a_indices, out float a_length)
         {
             a_vertices = null;
             a_indices = null;
@@ -886,227 +1069,225 @@ namespace Erde.Graphics.IO
             float len = 0;
 
             List<Vertex> vertices = new List<Vertex>();
-            List<ushort> indicies = new List<ushort>();
+            List<uint> indicies = new List<uint>();
 
-            Dictionary<Vertex, ushort> vertexLookup = new Dictionary<Vertex, ushort>(); 
+            Dictionary<Vertex, uint> vertexLookup = new Dictionary<Vertex, uint>(); 
 
             // Find which mesh sources contain the data for positions, normals and texcoord
-            foreach (Geometry geom in m_geometry)
+            Geometry geom = m_geometry[a_index];
+            Mesh mesh = geom.Mesh;
+
+            MeshVertex vertex = mesh.MeshVertex;
+            MeshTriangle triangles = mesh.MeshTriangle;
+
+            MeshSource positionData = new MeshSource();
+            MeshSource normalData = new MeshSource();
+            MeshSource texData = new MeshSource();
+
+            Input positionInput = new Input();
+            Input normalInput = new Input();
+            Input texInput = new Input();
+
+            int triangleStride = triangles.Inputs.Count;
+
+            foreach (Input triInput in triangles.Inputs)
             {
-                Mesh mesh = geom.Mesh;
-
-                MeshVertex vertex = mesh.MeshVertex;
-                MeshTriangle triangles = mesh.MeshTriangle;
-
-                MeshSource positionData = new MeshSource();
-                MeshSource normalData = new MeshSource();
-                MeshSource texData = new MeshSource();
-
-                Input positionInput = new Input();
-                Input normalInput = new Input();
-                Input texInput = new Input();
-
-                int triangleStride = triangles.Inputs.Count;
-
-                foreach (Input triInput in triangles.Inputs)
+                switch (triInput.Semantic.ToUpper())
                 {
-                    switch (triInput.Semantic.ToUpper())
+                    case "VERTEX":
                     {
-                        case "VERTEX":
+                        if (triInput.Source == ("#" + vertex.ID))
                         {
-                            if (triInput.Source == ("#" + vertex.ID))
+                            foreach (Input vertInput in vertex.Inputs)
                             {
-                                foreach (Input vertInput in vertex.Inputs)
+                                switch (vertInput.Semantic.ToUpper())
                                 {
-                                    switch (vertInput.Semantic.ToUpper())
+                                    case "POSITION":
                                     {
-                                        case "POSITION":
+                                        foreach (MeshSource meshSource in mesh.MeshSources)
                                         {
-                                            foreach (MeshSource meshSource in mesh.MeshSources)
+                                            if (vertInput.Source == "#" + meshSource.ID)
                                             {
-                                                if (vertInput.Source == "#" + meshSource.ID)
-                                                {
-                                                    positionData = meshSource;
-                                                    positionInput = triInput;
+                                                positionData = meshSource;
+                                                positionInput = triInput;
 
-                                                    break;
-                                                }
+                                                break;
                                             }
-
-                                            break;
                                         }
-                                        case "NORMAL":
+
+                                        break;
+                                    }
+                                    case "NORMAL":
+                                    {
+                                        foreach (MeshSource meshSource in mesh.MeshSources)
                                         {
-                                            foreach (MeshSource meshSource in mesh.MeshSources)
+                                            if (vertInput.Source == "#" + meshSource.ID)
                                             {
-                                                if (vertInput.Source == "#" + meshSource.ID)
-                                                {
-                                                    normalData = meshSource;
-                                                    normalInput = triInput;
+                                                normalData = meshSource;
+                                                normalInput = triInput;
 
-                                                    break;
-                                                }
+                                                break;
                                             }
-
-                                            break;
                                         }
-                                        case "TEXCOORD":
+
+                                        break;
+                                    }
+                                    case "TEXCOORD":
+                                    {
+                                        foreach (MeshSource meshSource in mesh.MeshSources)
                                         {
-                                            foreach (MeshSource meshSource in mesh.MeshSources)
+                                            if (vertInput.Source == "#" + meshSource.ID)
                                             {
-                                                if (vertInput.Source == "#" + meshSource.ID)
-                                                {
-                                                    texData = meshSource;
-                                                    texInput = triInput;
+                                                texData = meshSource;
+                                                texInput = triInput;
 
-                                                    break;
-                                                }
+                                                break;
                                             }
-
-                                            break;
                                         }
+
+                                        break;
                                     }
                                 }
                             }
-
-                            break;
                         }
-                        case "POSITION":
+
+                        break;
+                    }
+                    case "POSITION":
+                    {
+                        foreach (MeshSource meshSource in mesh.MeshSources)
                         {
-                            foreach (MeshSource meshSource in mesh.MeshSources)
+                            if (triInput.Source == "#" + meshSource.ID)
                             {
-                                if (triInput.Source == "#" + meshSource.ID)
-                                {
-                                    positionData = meshSource;
-                                    positionInput = triInput;
+                                positionData = meshSource;
+                                positionInput = triInput;
 
-                                    break;
-                                }
+                                break;
                             }
-
-                            break;
                         }
-                        case "NORMAL":
+
+                        break;
+                    }
+                    case "NORMAL":
+                    {
+                        foreach (MeshSource meshSource in mesh.MeshSources)
                         {
-                            foreach (MeshSource meshSource in mesh.MeshSources)
+                            if (triInput.Source == "#" + meshSource.ID)
                             {
-                                if (triInput.Source == "#" + meshSource.ID)
-                                {
-                                    normalData = meshSource;
-                                    normalInput = triInput;
+                                normalData = meshSource;
+                                normalInput = triInput;
 
-                                    break;
-                                }
+                                break;
                             }
-
-                            break;
                         }
-                        case "TEXCOORD":
+
+                        break;
+                    }
+                    case "TEXCOORD":
+                    {
+                        foreach (MeshSource meshSource in mesh.MeshSources)
                         {
-                            foreach (MeshSource meshSource in mesh.MeshSources)
+                            if (triInput.Source == "#" + meshSource.ID)
                             {
-                                if (triInput.Source == "#" + meshSource.ID)
-                                {
-                                    texData = meshSource;
-                                    texInput = triInput;
+                                texData = meshSource;
+                                texInput = triInput;
 
-                                    break;
-                                }
+                                break;
                             }
-
-                            break;
                         }
+
+                        break;
                     }
                 }
+            }
 
-                MeshAccessor positionAccessor = positionData.Technique.Accessor;
-                MeshAccessor normalAccessor = normalData.Technique.Accessor;
-                MeshAccessor texAccessor = texData.Technique.Accessor;
+            MeshAccessor positionAccessor = positionData.Technique.Accessor;
+            MeshAccessor normalAccessor = normalData.Technique.Accessor;
+            MeshAccessor texAccessor = texData.Technique.Accessor;
 
-                uint posCount = positionAccessor.Count;
-                uint normCount = normalAccessor.Count;
-                uint texCount = texAccessor.Count;
+            uint posCount = positionAccessor.Count;
+            uint normCount = normalAccessor.Count;
+            uint texCount = texAccessor.Count;
 
-                // To convert vector offsets to xyzw instead of whatever the file uses
-                int[] positionOffset = GetValueOffset(positionAccessor.Params);
-                int[] normalOffset = GetValueOffset(normalAccessor.Params);
-                int[] texOffset = GetValueOffset(texAccessor.Params);
+            // To convert vector offsets to xyzw instead of whatever the file uses
+            int[] positionOffset = GetValueOffset(positionAccessor.Params);
+            int[] normalOffset = GetValueOffset(normalAccessor.Params);
+            int[] texOffset = GetValueOffset(texAccessor.Params);
 
-                int posStride = positionAccessor.Stride;
-                int normStride = normalAccessor.Stride;
-                int texStride = texAccessor.Stride;
+            int posStride = positionAccessor.Stride;
+            int normStride = normalAccessor.Stride;
+            int texStride = texAccessor.Stride;
 
-                // Turn the data into vectors for easier use
-                Vector4[] positions = new Vector4[posCount];
-                Vector3[] normals = new Vector3[normCount];
-                Vector2[] texCoords = new Vector2[texCount];
+            // Turn the data into vectors for easier use
+            Vector4[] positions = new Vector4[posCount];
+            Vector3[] normals = new Vector3[normCount];
+            Vector2[] texCoords = new Vector2[texCount];
 
-                for (int i = 0; i < posCount; ++i)
+            for (int i = 0; i < posCount; ++i)
+            {
+                positions[i] = new Vector4(0, 0, 0, 1);
+
+                int index = i * posStride;
+
+                for (int j = 0; j < posStride; ++j)
                 {
-                    positions[i] = new Vector4(0, 0, 0, 1);
-
-                    int index = i * posStride;
-
-                    for (int j = 0; j < posStride; ++j)
-                    {
-                        positions[i][positionOffset[j]] = positionData.FloatData[index + j];
-                    }
-
-                    len = Math.Max(len, positions[i].LengthSquared);
+                    positions[i][positionOffset[j]] = positionData.FloatData[index + j];
                 }
 
-                for (int i = 0; i < normCount; ++i)
+                len = Math.Max(len, positions[i].LengthSquared);
+            }
+
+            for (int i = 0; i < normCount; ++i)
+            {
+                normals[i] = Vector3.Zero;
+
+                int index = i * normStride;
+
+                for (int j = 0; j < normStride; ++j)
                 {
-                    normals[i] = Vector3.Zero;
-
-                    int index = i * normStride;
-
-                    for (int j = 0; j < normStride; ++j)
-                    {
-                        normals[i][normalOffset[j]] = normalData.FloatData[index + j];
-                    }
+                    normals[i][normalOffset[j]] = normalData.FloatData[index + j];
                 }
+            }
 
-                for (int i = 0; i < texCount; ++i)
+            for (int i = 0; i < texCount; ++i)
+            {
+                texCoords[i] = Vector2.Zero;
+
+                int index = i * texStride;
+
+                for (int j = 0; j < texStride; ++j)
                 {
-                    texCoords[i] = Vector2.Zero;
-
-                    int index = i * texStride;
-
-                    for (int j = 0; j < texStride; ++j)
-                    {
-                        texCoords[i][texOffset[j]] = texData.FloatData[index + j];
-                    }
+                    texCoords[i][texOffset[j]] = texData.FloatData[index + j];
                 }
+            }
 
-                uint triVertexCount = triangles.Count * 3;
+            uint triVertexCount = triangles.Count * 3;
 
-                // Stitch Tris
-                for (int i = 0; i < triVertexCount; ++i)
+            // Stitch Tris
+            for (int i = 0; i < triVertexCount; ++i)
+            {
+                Vertex vert;
+
+                int triIndex = i * triangleStride;
+
+                uint posIndex = triangles.Data[triIndex + positionInput.Offset]; 
+                uint normIndex = triangles.Data[triIndex + normalInput.Offset];
+                uint texIndex = triangles.Data[triIndex + texInput.Offset];
+
+                vert.Position = positions[posIndex];
+                vert.Normal = normals[normIndex];
+                vert.TexCoords = texCoords[texIndex];
+
+                uint val = 0;
+
+                if (!vertexLookup.TryGetValue(vert, out val))
                 {
-                    Vertex vert;
-
-                    int triIndex = i * triangleStride;
-
-                    uint posIndex = triangles.Data[triIndex + positionInput.Offset]; 
-                    uint normIndex = triangles.Data[triIndex + normalInput.Offset];
-                    uint texIndex = triangles.Data[triIndex + texInput.Offset];
-
-                    vert.Position = positions[posIndex];
-                    vert.Normal = normals[normIndex];
-                    vert.TexCoords = texCoords[texIndex];
-
-                    ushort val = 0;
-
-                    if (!vertexLookup.TryGetValue(vert, out val))
-                    {
-                        vertices.Add(vert);
-                        val = (ushort)(vertices.Count - 1);
-                        vertexLookup.Add(vert, val);
-                    }
-
-                    indicies.Add(val);
+                    vertices.Add(vert);
+                    val = (uint)(vertices.Count - 1);
+                    vertexLookup.Add(vert, val);
                 }
+
+                indicies.Add(val);
             }
 
             a_vertices = vertices.ToArray();
@@ -1114,159 +1295,110 @@ namespace Erde.Graphics.IO
             a_length = (float)Math.Sqrt(len);
         }
 
-        public Model GetModel(Pipeline a_pipeline)
+        public Model GetModel(int a_index, Pipeline a_pipeline)
         {
             Model model = new Model(a_pipeline);
 
             Vertex[] verts; 
-            ushort[] indices;
+            uint[] indices;
             float len;
 
-            GenerateModelData(out verts, out indices, out len);
+            GenerateModelData(a_index, out verts, out indices, out len);
+
+            model.Name = m_geometry[a_index].Name;
 
             model.SetModelData(verts, indices, len);
 
             return model;
         }
 
-        public Model GetSkinnedModel(Pipeline a_pipeline)
+        public Model GetSkinnedModel(int a_index, Pipeline a_pipeline)
         {
             Model model = new Model(a_pipeline);
 
             float len = 0;
 
             List<SkinnedVertex> vertices = new List<SkinnedVertex>();
-            List<ushort> indicies = new List<ushort>();
+            List<uint> indicies = new List<uint>();
 
-            Dictionary<SkinnedVertex, ushort> vertexLookup = new Dictionary<SkinnedVertex, ushort>(); 
+            Dictionary<SkinnedVertex, uint> vertexLookup = new Dictionary<SkinnedVertex, uint>(); 
 
             // Find which mesh sources contain the data for positions, normals and texcoord
-            foreach (Geometry geom in m_geometry)
+            Geometry geom = m_geometry[a_index];
+            model.Name = geom.Name;
+            
+            string meshHash = "#" + geom.ID;
+
+            Mesh mesh = geom.Mesh;
+
+            MeshVertex vertex = mesh.MeshVertex;
+            MeshTriangle triangles = mesh.MeshTriangle;
+
+            MeshSource positionData = new MeshSource();
+            MeshSource normalData = new MeshSource();
+            MeshSource texData = new MeshSource();
+            MeshSource weightData = new MeshSource();
+            MeshSource jointData = new MeshSource();
+
+            Input vertexInput = new Input();
+            Input positionInput = new Input();
+            Input normalInput = new Input();
+            Input texInput = new Input();
+            Input jointInput = new Input();
+            Input weightInput = new Input();
+
+            uint weightInputs = 0;
+
+            ControllerVertexWeights vertexWeights = new ControllerVertexWeights();
+
+            uint triangleStride = (uint)triangles.Inputs.Count;
+
+            foreach (Input triInput in triangles.Inputs)
             {
-                string meshHash = "#" + geom.ID;
-
-                Mesh mesh = geom.Mesh;
-
-                MeshVertex vertex = mesh.MeshVertex;
-                MeshTriangle triangles = mesh.MeshTriangle;
-
-                MeshSource positionData = new MeshSource();
-                MeshSource normalData = new MeshSource();
-                MeshSource texData = new MeshSource();
-                MeshSource weightData = new MeshSource();
-                MeshSource jointData = new MeshSource();
-
-                Input vertexInput = new Input();
-                Input positionInput = new Input();
-                Input normalInput = new Input();
-                Input texInput = new Input();
-                Input jointInput = new Input();
-                Input weightInput = new Input();
-
-                uint weightInputs = 0;
-
-                ControllerVertexWeights vertexWeights = new ControllerVertexWeights();
-
-                uint triangleStride = (uint)triangles.Inputs.Count;
-
-                foreach (Input triInput in triangles.Inputs)
+                switch (triInput.Semantic.ToUpper())
                 {
-                    switch (triInput.Semantic.ToUpper())
+                    case "VERTEX":
                     {
-                        case "VERTEX":
+                        vertexInput = triInput;
+
+                        foreach (Controller cont in m_controller)
                         {
-                            vertexInput = triInput;
+                            ControllerSkin skin = cont.Skin;
 
-                            foreach (Controller cont in m_controller)
+                            if (skin.Source == meshHash)
                             {
-                                ControllerSkin skin = cont.Skin;
+                                vertexWeights = skin.Weights;
 
-                                if (skin.Source == meshHash)
+                                weightInputs = (uint)vertexWeights.Inputs.Count;
+
+                                foreach (Input input in vertexWeights.Inputs)
                                 {
-                                    vertexWeights = skin.Weights;
-
-                                    weightInputs = (uint)vertexWeights.Inputs.Count;
-
-                                    foreach (Input input in vertexWeights.Inputs)
+                                    switch (input.Semantic.ToUpper())
                                     {
-                                        switch (input.Semantic.ToUpper())
+                                        case "JOINT":
                                         {
-                                            case "JOINT":
+                                            foreach (MeshSource meshSource in skin.Sources)
                                             {
-                                                foreach (MeshSource meshSource in skin.Sources)
+                                                if (input.Source == "#" + meshSource.ID)
                                                 {
-                                                    if (input.Source == "#" + meshSource)
-                                                    {
-                                                        weightData = meshSource;
-                                                        jointInput = input;
-                                                    }    
-                                                }
-
-                                                break;
-                                            }
-                                            case "WEIGHT":
-                                            {
-                                                foreach (MeshSource meshSource in skin.Sources)
-                                                {
-                                                    if (input.Source == "#" + meshSource)
-                                                    {
-                                                        weightData = meshSource;
-                                                        weightInput = input;
-                                                    }
-                                                }
-
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (triInput.Source == "#" + vertex.ID)
-                            {
-                                foreach (Input vertInput in vertex.Inputs)
-                                {
-                                    switch (vertInput.Semantic.ToUpper())
-                                    {
-                                        case "POSITION":
-                                        {
-                                            foreach (MeshSource meshSource in mesh.MeshSources)
-                                            {
-                                                if (vertInput.Source == "#" + meshSource.ID)
-                                                {
-                                                    positionData = meshSource;
-                                                    positionInput = triInput;
+                                                    jointData = meshSource;
+                                                    jointInput = input;
 
                                                     break;
-                                                }
+                                                }    
                                             }
 
                                             break;
                                         }
-                                        case "NORMAL":
+                                        case "WEIGHT":
                                         {
-                                            foreach (MeshSource meshSource in mesh.MeshSources)
+                                            foreach (MeshSource meshSource in skin.Sources)
                                             {
-                                                if (vertInput.Source == "#" + meshSource.ID)
+                                                if (input.Source == "#" + meshSource.ID)
                                                 {
-                                                    normalData = meshSource;
-                                                    normalInput = triInput;
-
-                                                    break;
-                                                }
-                                            }
-
-                                            break;
-                                        }
-                                        case "TEXCOORD":
-                                        {
-                                            foreach (MeshSource meshSource in mesh.MeshSources)
-                                            {
-                                                if (vertInput.Source == "#" + meshSource.ID)
-                                                {
-                                                    texData = meshSource;
-                                                    texInput = triInput;
-
+                                                    weightData = meshSource;
+                                                    weightInput = input;
+                                                        
                                                     break;
                                                 }
                                             }
@@ -1276,171 +1408,360 @@ namespace Erde.Graphics.IO
                                     }
                                 }
                             }
-
-                            break;
                         }
-                        case "POSITION":
-                        {
-                            foreach (MeshSource meshSource in mesh.MeshSources)
-                            {
-                                if (triInput.Source == "#" + meshSource.ID)
-                                {
-                                    positionData = meshSource;
-                                    positionInput = triInput;
 
-                                    break;
+                        if (triInput.Source == "#" + vertex.ID)
+                        {
+                            foreach (Input vertInput in vertex.Inputs)
+                            {
+                                switch (vertInput.Semantic.ToUpper())
+                                {
+                                    case "POSITION":
+                                    {
+                                        foreach (MeshSource meshSource in mesh.MeshSources)
+                                        {
+                                            if (vertInput.Source == "#" + meshSource.ID)
+                                            {
+                                                positionData = meshSource;
+                                                positionInput = triInput;
+
+                                                break;
+                                            }
+                                        }
+
+                                        break;
+                                    }
+                                    case "NORMAL":
+                                    {
+                                        foreach (MeshSource meshSource in mesh.MeshSources)
+                                        {
+                                            if (vertInput.Source == "#" + meshSource.ID)
+                                            {
+                                                normalData = meshSource;
+                                                normalInput = triInput;
+
+                                                break;
+                                            }
+                                        }
+
+                                        break;
+                                    }
+                                    case "TEXCOORD":
+                                    {
+                                        foreach (MeshSource meshSource in mesh.MeshSources)
+                                        {
+                                            if (vertInput.Source == "#" + meshSource.ID)
+                                            {
+                                                texData = meshSource;
+                                                texInput = triInput;
+
+                                                break;
+                                            }
+                                        }
+
+                                        break;
+                                    }
                                 }
                             }
-
-                            break;
                         }
-                        case "NORMAL":
+
+                        break;
+                    }
+                    case "POSITION":
+                    {
+                        foreach (MeshSource meshSource in mesh.MeshSources)
                         {
-                            foreach (MeshSource meshSource in mesh.MeshSources)
+                            if (triInput.Source == "#" + meshSource.ID)
                             {
-                                if (triInput.Source == "#" + meshSource.ID)
-                                {
-                                    normalData = meshSource;
-                                    normalInput = triInput;
+                                positionData = meshSource;
+                                positionInput = triInput;
 
-                                    break;
-                                }
+                                break;
                             }
-
-                            break;
                         }
-                        case "TEXCOORD":
+
+                        break;
+                    }
+                    case "NORMAL":
+                    {
+                        foreach (MeshSource meshSource in mesh.MeshSources)
                         {
-                            foreach (MeshSource meshSource in mesh.MeshSources)
+                            if (triInput.Source == "#" + meshSource.ID)
                             {
-                                if (triInput.Source == "#" + meshSource.ID)
-                                {
-                                    texData = meshSource;
-                                    texInput = triInput;
+                                normalData = meshSource;
+                                normalInput = triInput;
 
-                                    break;
-                                }
+                                break;
                             }
-
-                            break;
                         }
+
+                        break;
+                    }
+                    case "TEXCOORD":
+                    {
+                        foreach (MeshSource meshSource in mesh.MeshSources)
+                        {
+                            if (triInput.Source == "#" + meshSource.ID)
+                            {
+                                texData = meshSource;
+                                texInput = triInput;
+
+                                break;
+                            }
+                        }
+
+                        break;
                     }
                 }
+            }
 
-                MeshAccessor positionAccessor = positionData.Technique.Accessor;
-                MeshAccessor normalAccessor = normalData.Technique.Accessor;
-                MeshAccessor texAccessor = texData.Technique.Accessor;
+            MeshAccessor positionAccessor = positionData.Technique.Accessor;
+            MeshAccessor normalAccessor = normalData.Technique.Accessor;
+            MeshAccessor texAccessor = texData.Technique.Accessor;
 
-                uint posCount = positionAccessor.Count;
-                uint normCount = normalAccessor.Count;
-                uint texCount = texAccessor.Count;
-                uint weightCount = vertexWeights.Count;
+            uint posCount = positionAccessor.Count;
+            uint normCount = normalAccessor.Count;
+            uint texCount = texAccessor.Count;
+            uint weightCount = vertexWeights.Count;
 
-                // To convert vector offsets to xyzw instead of whatever the file uses
-                int[] positionOffset = GetValueOffset(positionAccessor.Params);
-                int[] normalOffset = GetValueOffset(normalAccessor.Params);
-                int[] texOffset = GetValueOffset(texAccessor.Params);
+            // To convert vector offsets to xyzw instead of whatever the file uses
+            int[] positionOffset = GetValueOffset(positionAccessor.Params);
+            int[] normalOffset = GetValueOffset(normalAccessor.Params);
+            int[] texOffset = GetValueOffset(texAccessor.Params);
 
-                int posStride = positionAccessor.Stride;
-                int normStride = normalAccessor.Stride;
-                int texStride = texAccessor.Stride;
+            int posStride = positionAccessor.Stride;
+            int normStride = normalAccessor.Stride;
+            int texStride = texAccessor.Stride;
 
-                // Turn the data into vectors for easier use
-                Vector4[] positions = new Vector4[posCount];
-                Vector3[] normals = new Vector3[normCount];
-                Vector2[] texCoords = new Vector2[texCount];
-                ushort[,] boneIndicies = new ushort[weightCount, 5];
-                float[,] weights = new float[weightCount, 5];
+            // Turn the data into vectors for easier use
+            Vector4[] positions = new Vector4[posCount];
+            Vector3[] normals = new Vector3[normCount];
+            Vector2[] texCoords = new Vector2[texCount];
+            ushort[,] boneIndicies = new ushort[weightCount, 4];
+            float[,] weights = new float[weightCount, 4];
 
-                for (int i = 0; i < posCount; ++i)
+            for (int i = 0; i < posCount; ++i)
+            {
+                positions[i] = new Vector4(0, 0, 0, 1);
+
+                for (int j = 0; j < posStride; ++j)
                 {
-                    positions[i] = new Vector4(0, 0, 0, 1);
-
-                    for (int j = 0; j < posStride; ++j)
-                    {
-                        positions[i][positionOffset[j]] = positionData.FloatData[i * posStride + j];
-                    }
-
-                    len = Math.Max(len, positions[i].LengthSquared);
+                    positions[i][positionOffset[j]] = positionData.FloatData[i * posStride + j];
                 }
 
-                for (int i = 0; i < normCount; ++i)
+                len = Math.Max(len, positions[i].LengthSquared);
+            }
+
+            for (int i = 0; i < normCount; ++i)
+            {
+                normals[i] = Vector3.Zero;
+
+                for (int j = 0; j < normStride; ++j)
                 {
-                    normals[i] = Vector3.Zero;
-
-                    for (int j = 0; j < normStride; ++j)
-                    {
-                        normals[i][normalOffset[j]] = normalData.FloatData[i * normStride + j];
-                    }
+                    normals[i][normalOffset[j]] = normalData.FloatData[i * normStride + j];
                 }
+            }
 
-                for (int i = 0; i < texCount; ++i)
+            for (int i = 0; i < texCount; ++i)
+            {
+                texCoords[i] = Vector2.Zero;
+
+                for (int j = 0; j < texStride; ++j)
                 {
-                    texCoords[i] = Vector2.Zero;
-
-                    for (int j = 0; j < texStride; ++j)
-                    {
-                        texCoords[i][texOffset[j]] = texData.FloatData[i * texStride + j];
-                    }
+                    texCoords[i][texOffset[j]] = texData.FloatData[i * texStride + j];
                 }
+            }
 
-                uint index = 0;
-                for (uint i = 0; i < weightCount; ++i)
+            uint index = 0;
+            for (uint i = 0; i < weightCount; ++i)
+            {
+                uint count = vertexWeights.WeightCount[i];
+                for (int j = 0; j < count; ++j)
                 {
-                    uint count = vertexWeights.WeightCount[i];
-                    for (int j = 0; j < count; ++j)
-                    {
-                        boneIndicies[i, j] = (ushort)vertexWeights.WeightBonePairs[index + jointInput.Offset];
-                        weights[i, j] = weightData.FloatData[vertexWeights.WeightBonePairs[index + weightInput.Offset]];
+                    uint lookUpIndex = vertexWeights.WeightBonePairs[index + jointInput.Offset];
+                    string name = jointData.NameData[lookUpIndex];
 
-                        index += weightInputs;
+                    ushort boneIndex = 0;
+                    if (m_skeletonNameLookup.ContainsKey(name))
+                    {
+                        boneIndex = m_skeletonNameLookup[name].Index;
+                    }
+                    else
+                    {
+                        // This is stupid why do I have to take a index convert to a name then back to an index
+                        // Why can it not use a name or index directly
+                        SkeletonNode node = null;
+
+                        if (m_skeleton != null)
+                        {
+                            node = m_skeleton.GetNode(name);
+
+                            if (node == null)
+                            {
+                                // TODO: Fix index
+                                node = new SkeletonNode((ushort)(m_skeleton.GetLastIndex() + 1), name);
+                            }
+                        }
+                        else
+                        {
+                            node = new SkeletonNode((ushort)m_skeletonNodes.Count, name);
+                        }
+
+                        m_skeletonNameLookup.Add(name, node);
+                        m_skeletonNodes.Add(node);
+
+                        boneIndex = node.Index; 
                     }
 
-                    for (uint j = count; j < 5; ++j)
-                    {
-                        boneIndicies[i, j] = 0;
-                        weights[i, j] = 0.0f;
-                    }
+                    boneIndicies[i, j] = boneIndex;
+                    weights[i, j] = weightData.FloatData[vertexWeights.WeightBonePairs[index + weightInput.Offset]];
+
+                    index += weightInputs;
                 }
 
-                uint triVertexCount = triangles.Count * 3;
-
-                // Stitch Tris
-                for (uint i = 0; i < triVertexCount; ++i)
+                for (uint j = count; j < 4; ++j)
                 {
-                    SkinnedVertex vert;
-                    vert.Bones = new ushort[5];
-                    vert.Weights = new float[5];
-
-                    uint triIndex = i * triangleStride; 
-
-                    uint vertexData = triangles.Data[triIndex + vertexInput.Offset];
-                    for (int j = 0; j < 5; ++j)
-                    {
-                        vert.Bones[j] = boneIndicies[vertexData, j];
-                        vert.Weights[j] = weights[vertexData, j];
-                    }
-
-                    vert.Position = positions[triangles.Data[triIndex + positionInput.Offset]];
-                    vert.Normal = normals[triangles.Data[triIndex + normalInput.Offset]];
-                    vert.TexCoords = texCoords[triangles.Data[triIndex + texInput.Offset]];
-
-                    ushort val = 0;
-
-                    if (!vertexLookup.TryGetValue(vert, out val))
-                    {
-                        vertices.Add(vert);
-                        val = (ushort)(vertices.Count - 1);
-                        vertexLookup.Add(vert, val);
-                    }
-
-                    indicies.Add(val);
+                    boneIndicies[i, j] = 0;
+                    weights[i, j] = 0.0f;
                 }
+            }
+
+            uint triVertexCount = triangles.Count * 3;
+
+            // Stitch Tris
+            for (uint i = 0; i < triVertexCount; ++i)
+            {
+                SkinnedVertex vert;    
+                vert.Bones = Vector4.Zero;
+                vert.Weights = Vector4.Zero;
+
+                uint triIndex = i * triangleStride; 
+
+                uint vertexData = triangles.Data[triIndex + vertexInput.Offset];
+                for (int j = 0; j < 4; ++j)
+                {
+                    vert.Bones[j] = (float)boneIndicies[vertexData, j];
+                    vert.Weights[j] = weights[vertexData, j];
+                }
+
+                uint posIndex = triangles.Data[triIndex + positionInput.Offset]; 
+                uint normIndex = triangles.Data[triIndex + normalInput.Offset];
+                uint texIndex = triangles.Data[triIndex + texInput.Offset];
+
+                vert.Position = positions[posIndex];
+                vert.Normal = normals[normIndex];
+                vert.TexCoords = texCoords[texIndex];
+
+                uint val = 0;
+
+                if (!vertexLookup.TryGetValue(vert, out val))
+                {
+                    vertices.Add(vert);
+                    val = (uint)(vertices.Count - 1);
+                    vertexLookup.Add(vert, val);
+                }
+
+                indicies.Add(val);
             }
 
             model.SetModelData(vertices.ToArray(), indicies.ToArray(), (float)Math.Sqrt(len));
 
             return model;
+        }
+
+        SkeletonNode GenerateNode(SkeletonNode a_parent, SceneNode a_node)
+        {
+            SkeletonNode skeletonNode = null;
+
+            if (a_node.Type.ToUpper() != "JOINT")
+            {
+                skeletonNode = a_parent;
+            }
+            else
+            {
+                string sid = a_node.SID;
+
+                if (m_skeletonNameLookup.ContainsKey(sid))
+                {
+                    skeletonNode = m_skeletonNameLookup[sid];
+                }
+                else
+                {
+                    if (m_skeleton != null)
+                    {
+                        skeletonNode = m_skeleton.GetNode(sid);
+
+                        if (skeletonNode == null)
+                        {
+                            skeletonNode = new SkeletonNode((ushort)(m_skeleton.GetLastIndex() + 1), sid);
+                        }
+                    }  
+                    else
+                    {
+                        skeletonNode = new SkeletonNode((ushort)m_skeletonNodes.Count, sid);
+                    }                    
+
+                    m_skeletonNameLookup.Add(sid, skeletonNode);
+                    m_skeletonNodes.Add(skeletonNode);
+                }
+            }
+
+            foreach (SceneNode node in a_node.Children)
+            {
+                GenerateNode(skeletonNode, node);
+            }
+
+            skeletonNode.Parent = a_parent;
+
+            return skeletonNode;
+        }
+
+        void GenerateNodeTree(ref SkeletonNode a_root, SceneNode a_node)
+        {
+            if (a_node.Type.ToUpper() == "JOINT")
+            {
+                a_root = GenerateNode(null, a_node);
+            }
+            else
+            {
+                foreach (SceneNode node in a_node.Children)
+                {
+                    GenerateNodeTree(ref a_root, node);
+
+                    if (a_root != null)
+                    {
+                        return;
+                    }
+                }
+            }
+        }
+
+        public Skeleton GetSkeleton()
+        {
+            SkeletonNode rootNode = null;
+
+            foreach (Scene scene in m_scene)
+            {
+                if (scene.ID == "Scene")
+                {
+                    foreach (SceneNode node in scene.Nodes)
+                    {
+                        GenerateNodeTree(ref rootNode, node);
+
+                        if (rootNode != null)
+                        {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (m_skeleton == null)
+            {
+                m_skeleton = new Skeleton(rootNode);
+            }
+
+            return m_skeleton;
         }
     }
 }

@@ -123,12 +123,12 @@ namespace Erde.Graphics.Rendering
         {
         }
 
-        public void AddObject (LinkedList<DrawingContainer> a_objects)
+        public void AddObject (LinkedList<DrawingContainer> a_objects, LinkedList<Renderer> a_renderers)
         {
             
         }
 
-        public void RemoveObject (LinkedList<DrawingContainer> a_objects)
+        public void RemoveObject (LinkedList<DrawingContainer> a_objects, LinkedList<Renderer> a_renderers)
         {
             for (LinkedListNode<DrawingContainer> cont = a_objects.First; cont != null; cont = cont.Next)
             {

@@ -11,7 +11,6 @@ namespace Erde.Voxel
 {
     public class VoxelManager : IDisposable
     {
-
         ConcurrentDictionary<Vector3, Chunk> m_chunkLookup;
 
         Thread                               m_voxelThread;
@@ -49,6 +48,8 @@ namespace Erde.Voxel
         uint                                 m_maxThreads;
         List<Thread>                         m_updateThreads;
         ConcurrentQueue<Chunk>               m_updateChunk;
+
+        List<Vector3>                        m_reservedKeys;
 
         public ConcurrentDictionary<Vector3, Chunk> Chunks
         {
@@ -190,6 +191,8 @@ namespace Erde.Voxel
             m_maxThreads = (uint)Math.Ceiling(Environment.ProcessorCount * 0.5f);
             m_updateThreads = new List<Thread>();
             m_updateChunk = new ConcurrentQueue<Chunk>();
+
+            m_reservedKeys = new List<Vector3>();
         }
 
         public VoxelManager (int a_pow2, int a_stackSize, float a_voxelSize, int a_scanDistance, float a_destroyDistance, IGenerator a_worldGenerator, Material a_material, bool a_threaded, Pipeline a_pipeline, Graphics.Graphics a_graphics) : this()
@@ -246,6 +249,10 @@ namespace Erde.Voxel
                     {
                         break;
                     }
+                    else if (count > 2)
+                    {
+                        VoxelInit();
+                    }
 
                     Thread.Sleep(100);
                 }
@@ -288,6 +295,11 @@ namespace Erde.Voxel
             chunk.UpdateFlag = e_UpdateFlag.Pending;
 
             m_chunkLookup.TryAdd(a_position, chunk);
+
+            lock (m_reservedKeys)
+            {
+                m_reservedKeys.Remove(a_position);
+            }
         }
 
         bool VoxelObjectComp (Vector2 a_keyPos)
@@ -298,6 +310,16 @@ namespace Erde.Voxel
 
                 if (!m_chunkLookup.ContainsKey(pos))
                 {
+                    lock (m_reservedKeys)
+                    {
+                        if (m_reservedKeys.Contains(pos))
+                        {
+                            continue;
+                        }
+                        
+                        m_reservedKeys.Add(pos);
+                    }
+
                     AddVoxelObject(pos);
 
                     return true;
@@ -587,6 +609,8 @@ namespace Erde.Voxel
                 ++trig;
             }
 
+            int chunksToUpdate = m_updateChunk.Count;
+
             int count = m_updateThreads.Count;
 
             for (int i = 0; i < count; ++i)
@@ -602,7 +626,7 @@ namespace Erde.Voxel
                 }
             }
 
-            if (count < m_maxThreads && count * 3 <= m_updateChunk.Count)
+            if (count < m_maxThreads && count * 3 <= chunksToUpdate)
             {
                 Thread thread = new Thread(UpdateChunks)
                 {
@@ -611,6 +635,18 @@ namespace Erde.Voxel
 
                 thread.Start();
                 m_updateThreads.Add(thread);
+            }
+            // Rarely occur but if this thread runs out of stuff to submit and there is still chunks to update
+            // it will help updating chunks.
+            else if (trig == 0 && chunksToUpdate > 0)
+            {
+                Chunk chunk;
+                if (m_updateChunk.TryDequeue(out chunk))
+                {
+                    chunk.UpdateFlag = e_UpdateFlag.Updating;
+                    chunk.UpdateData();
+                    chunk.UpdateFlag = e_UpdateFlag.Finished;
+                }
             }
         }
 

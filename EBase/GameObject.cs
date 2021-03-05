@@ -7,12 +7,26 @@ namespace Erde
     {
         static List<GameObject> GameObjects = new List<GameObject>();
 
+        string                  m_name;
+
         List<Component>         m_components;
 
         Transform               m_transform;
 
         Behaviour.Event         m_update;
         Behaviour.Event         m_physicsUpdate;
+
+        public string Name
+        {
+            get
+            {
+                return m_name;
+            }
+            set
+            {
+                m_name = value;
+            }
+        }
 
         public Transform Transform
         {
@@ -22,8 +36,44 @@ namespace Erde
             }
         }
 
+        public GameObject Parent
+        {
+            get
+            {
+                lock (this)
+                {
+                    Transform parent = m_transform.Parent;
+
+                    if (parent != null)
+                    {
+                        return parent.GameObject;
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        public IEnumerable<GameObject> Children
+        {
+            get
+            {
+                lock (this)
+                {
+                    IEnumerable<Transform> children = m_transform.Children;
+
+                    foreach (Transform child in children)
+                    {
+                        yield return child.GameObject;
+                    }
+                }
+            }
+        }
+
         public GameObject ()
         {
+            m_name = string.Empty;
+
             m_components = new List<Component>();
 
             m_transform = AddComponent<Transform>();
@@ -199,6 +249,66 @@ namespace Erde
                     }
                 }
             }
+        }
+
+        GameObject GetChild(GameObject a_child, string a_name)
+        {
+            if (a_child.Name == a_name)
+            {
+                return a_child;
+            }
+
+            IEnumerable<Transform> children = a_child.Transform.Children;
+
+            foreach (Transform child in children)
+            {
+                GameObject childObj = child.GameObject;
+
+                GameObject obj = GetChild(childObj, a_name);
+
+                if (obj != null)
+                {
+                    return obj;
+                }
+            }
+
+            return null;
+        }
+
+        public GameObject GetChildRecursize(string a_name)
+        {
+            IEnumerable<Transform> children = Transform.Children;
+
+            foreach (Transform child in children)
+            {
+                GameObject childObj = child.GameObject;
+
+                GameObject obj = GetChild(childObj, a_name);
+
+                if (obj != null)
+                {
+                    return obj;
+                }
+            }
+
+            return null;
+        }
+
+        public GameObject GetChild(string a_name)
+        {
+            IEnumerable<Transform> children = Transform.Children;
+
+            foreach (Transform child in children)
+            {
+                GameObject obj = child.GameObject;
+
+                if (obj.Name == a_name)
+                {
+                    return obj;
+                }
+            }
+
+            return null;
         }
 
         public static void UpdateBehaviours ()

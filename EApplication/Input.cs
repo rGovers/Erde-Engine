@@ -14,6 +14,7 @@ namespace Erde.Application
         KeyboardState     m_keyboardState;
         KeyboardState     m_prevKeyboardState;
                           
+        MouseState        m_cursorState;
         MouseState        m_mouseState;
         MouseState        m_prevMouseState;
                           
@@ -31,6 +32,7 @@ namespace Erde.Application
             m_keyboardState = Keyboard.GetState();
             m_prevKeyboardState = Keyboard.GetState();
 
+            m_cursorState = Mouse.GetCursorState();
             m_mouseState = Mouse.GetState();
             m_prevMouseState = Mouse.GetState();
 
@@ -47,6 +49,8 @@ namespace Erde.Application
 
             m_prevMouseState = m_mouseState;
             m_mouseState = Mouse.GetState();
+
+            m_cursorState = Mouse.GetCursorState();
 
             lock (m_blockedKeys)
             {
@@ -139,9 +143,7 @@ namespace Erde.Application
 
         public static Vector2 GetCursorPosition ()
         {
-            Point point = Cursor.Position;
-
-            Vector2 cPoint = Instance.m_application.PointToClient(new Vector2(point.X, point.Y));
+            Vector2 cPoint = Instance.m_application.PointToClient(new Vector2(Instance.m_cursorState.X, Instance.m_cursorState.Y));
 
             return new Vector2(cPoint.X, Instance.m_application.Height - cPoint.Y);
         }
