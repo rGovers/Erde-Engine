@@ -264,6 +264,8 @@ namespace Erde.Graphics.Internal
                 lights = Light.LightList;
             }
 
+            GL.Enable(EnableCap.DepthTest);
+
             foreach (Light light in lights)
             {
                 if (light.ShadowMapped)

@@ -22,7 +22,7 @@ EDistanceFieldCollider::EDistanceFieldCollider(void* a_distanceField, int a_stri
 
 	m_shapeType = CUSTOM_CONVEX_SHAPE_TYPE;
 
-	m_margin = 0;
+	m_margin = 0.01f;
 }
 EDistanceFieldCollider::~EDistanceFieldCollider()
 {
@@ -128,9 +128,9 @@ float EDistanceFieldCollider::GetPoint(const btVector3& a_localPos) const
 	const float lerpY = (a_localPos.y() / m_spacing) - (int)(a_localPos.y() / m_spacing);
 	const float lerpZ = (a_localPos.z() / m_spacing) - (int)(a_localPos.z() / m_spacing);
 
-	const int xA = btMin(trueWidth, btMax(0,  (int)((a_localPos.x() + halfWidth)  / m_spacing)));
+	const int xA = btMin(trueWidth,  btMax(0, (int)((a_localPos.x() + halfWidth)  / m_spacing)));
 	const int yA = btMin(trueHeight, btMax(0, (int)((a_localPos.y() + halfHeight) / m_spacing)));
-	const int zA = btMin(trueDepth, btMax(0,  (int)((a_localPos.z() + halfDepth)  / m_spacing)));
+	const int zA = btMin(trueDepth,  btMax(0, (int)((a_localPos.z() + halfDepth)  / m_spacing)));
 
 	const int xB = btMin(trueWidth, xA + 1);
 	const int yB = btMin(trueHeight, yA + 1);
@@ -141,20 +141,20 @@ float EDistanceFieldCollider::GetPoint(const btVector3& a_localPos) const
 	const int indexY = ((zA * m_width * m_height) + (yB * m_width) + xA) * m_stride;
 	const int indexZ = ((zB * m_width * m_height) + (yA * m_width) + xA) * m_stride;
 
-	const float dist = *(float*)((char*)m_distanceField + index);
+	const float dist =  *(float*)((char*)m_distanceField + index);
 	const float distX = *(float*)((char*)m_distanceField + indexX);
 	const float distY = *(float*)((char*)m_distanceField + indexY);
 	const float distZ = *(float*)((char*)m_distanceField + indexZ);
 
-	const float mulX = distX - dist;
-	const float mulY = distY - dist;
-	const float mulZ = distZ - dist;
+	const float mulX = dist - distX;
+	const float mulY = dist - distY;
+	const float mulZ = dist - distZ;
 
 	const float finDist = dist + ((mulX * lerpX) + (mulY * lerpY) + (mulZ * lerpZ));
 
 	const btVector3 diff = (btVector3(xA - halfWidth, yA - halfHeight, zA - halfDepth) * m_spacing) - a_localPos;
 
-	return /*copysignf(diff.length(), finDist) +*/ finDist;
+	return finDist;
 }
 btVector3 EDistanceFieldCollider::GetNormal(const btVector3& a_localPos) const
 {

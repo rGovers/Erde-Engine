@@ -12,7 +12,8 @@ namespace Erde.Graphics.Variables
 {
     public enum e_PrimitiveType
     {
-        Cube
+        Cube,
+        IcoSphere,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -82,6 +83,12 @@ namespace Erde.Graphics.Variables
                 case e_PrimitiveType.Cube:
                 {
                     m_model.GenerateCube();
+
+                    break;
+                }
+                case e_PrimitiveType.IcoSphere:
+                {
+                    m_model.GenerateIcoSphere();
 
                     break;
                 }
@@ -360,7 +367,110 @@ namespace Erde.Graphics.Variables
 
             SetData(vertices, indicies, Vector3.One.Length, ModelVertexInfo.GetVertexInfo<Vertex>());
         }
-        
+
+        uint GetMidPoint(uint a_indiceA, uint a_indiceB, ref List<Vertex> a_vertices)
+        {
+	        Vector4 posA = a_vertices[(int)a_indiceA].Position;
+	        Vector4 posB = a_vertices[(int)a_indiceB].Position;
+	        Vector4 mid = new Vector4(Vector3.Normalize((posA + posB).Xyz * 0.5f), 1.0f);
+
+            int count = a_vertices.Count;
+	        for (int i = 0; i < count; ++i)
+	        {
+	        	if (a_vertices[i].Position == mid)
+	        	{
+	        		return (uint)i;
+	        	}
+	        }
+
+	        a_vertices.Add(new Vertex(mid, mid.Xyz, Vector2.One));
+
+	        return (uint)count;
+        }
+        void GenerateIcoSphere(int a_recursion = 2)
+        {
+            List<Vertex> vertices = new List<Vertex>();
+
+            float t = (1.0f + (float)Math.Sqrt(0.5f)) * 0.5f;
+
+            vertices.Add(new Vertex(new Vector4(-1.0f, t,  0.0f, 1.0f), Vector3.Zero, Vector2.Zero));
+            vertices.Add(new Vertex(new Vector4(1.0f,  t,  0.0f, 1.0f), Vector3.Zero, Vector2.Zero));
+            vertices.Add(new Vertex(new Vector4(-1.0f, -t, 0.0f, 1.0f), Vector3.Zero, Vector2.Zero));
+            vertices.Add(new Vertex(new Vector4(1.0f,  -t, 0.0f, 1.0f), Vector3.Zero, Vector2.Zero));
+
+            vertices.Add(new Vertex(new Vector4(0.0f, -1.0f, t,  1.0f), Vector3.Zero, Vector2.Zero));
+            vertices.Add(new Vertex(new Vector4(0.0f, 1.0f,  t,  1.0f), Vector3.Zero, Vector2.Zero));
+            vertices.Add(new Vertex(new Vector4(0.0f, -1.0f, -t, 1.0f), Vector3.Zero, Vector2.Zero));
+            vertices.Add(new Vertex(new Vector4(0.0f, 1.0f,  -t, 1.0f), Vector3.Zero, Vector2.Zero));
+
+            vertices.Add(new Vertex(new Vector4(t,  0.0f, -1.0f, 1.0f), Vector3.Zero, Vector2.Zero));
+            vertices.Add(new Vertex(new Vector4(t,  0.0f, 1.0f,  1.0f), Vector3.Zero, Vector2.Zero));
+            vertices.Add(new Vertex(new Vector4(-t, 0.0f, -1.0f, 1.0f), Vector3.Zero, Vector2.Zero));
+            vertices.Add(new Vertex(new Vector4(-t, 0.0f, 1.0f,  1.0f), Vector3.Zero, Vector2.Zero));
+
+            int count = vertices.Count;
+            for (int i = 0; i < count; ++i)
+            {
+                Vertex vert = vertices[i];
+
+                vert.Position = new Vector4(Vector3.Normalize(vert.Position.Xyz), 1.0f);
+                vert.Normal = vert.Position.Xyz;
+
+                vertices[i] = vert;
+            }
+
+            List<uint> indices = new List<uint>(60);
+
+            indices.Add(0);  indices.Add(11); indices.Add(5);
+            indices.Add(0);  indices.Add(5);  indices.Add(1);
+            indices.Add(0);  indices.Add(1);  indices.Add(7);
+            indices.Add(0);  indices.Add(7);  indices.Add(10);
+            indices.Add(0);  indices.Add(10); indices.Add(11);
+
+            indices.Add(1);  indices.Add(5);  indices.Add(9);
+            indices.Add(5);  indices.Add(11); indices.Add(4);
+            indices.Add(11); indices.Add(10); indices.Add(2);
+            indices.Add(10); indices.Add(7);  indices.Add(6);
+            indices.Add(7);  indices.Add(1);  indices.Add(8);
+
+            indices.Add(3);  indices.Add(9);  indices.Add(4);
+            indices.Add(3);  indices.Add(4);  indices.Add(2);
+            indices.Add(3);  indices.Add(2);  indices.Add(6);
+            indices.Add(3);  indices.Add(6);  indices.Add(8);
+            indices.Add(3);  indices.Add(8);  indices.Add(9);
+
+            indices.Add(4);  indices.Add(9);  indices.Add(5);
+            indices.Add(2);  indices.Add(4);  indices.Add(11);
+            indices.Add(6);  indices.Add(2);  indices.Add(10);
+            indices.Add(8);  indices.Add(6);  indices.Add(7);
+            indices.Add(9);  indices.Add(8);  indices.Add(1);
+
+            for (int i = 0; i < a_recursion; ++i)
+            {
+                count = indices.Count;
+                List<uint> tempFaces = new List<uint>(count * 4);
+                for (int j = 0; j < count; j += 3)
+                {
+                    uint indexA = indices[j];
+                    uint indexB = indices[j + 1];
+                    uint indexC = indices[j + 2];
+
+                    uint a = GetMidPoint(indexA, indexB, ref vertices);
+                    uint b = GetMidPoint(indexB, indexC, ref vertices);
+                    uint c = GetMidPoint(indexC, indexA, ref vertices);
+
+                    tempFaces.Add(indexA); tempFaces.Add(a); tempFaces.Add(c);
+                    tempFaces.Add(indexB); tempFaces.Add(b); tempFaces.Add(a);
+                    tempFaces.Add(indexC); tempFaces.Add(c); tempFaces.Add(b);
+                    tempFaces.Add(a);      tempFaces.Add(b); tempFaces.Add(c);
+                }
+
+                indices = tempFaces;
+            }
+
+            SetData(vertices.ToArray(), indices.ToArray(), 1.0f, ModelVertexInfo.GetVertexInfo<Vertex>());
+        }
+
         public static Model CreatePrimitive (e_PrimitiveType a_primitive, Pipeline a_pipeline)
         {
             Model model = new Model(a_pipeline);

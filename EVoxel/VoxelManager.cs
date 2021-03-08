@@ -821,6 +821,31 @@ namespace Erde.Voxel
 
             return float.NaN;
         }
+        public Vector3 GetNormal (Vector3 a_position)
+        {
+            float distRight = GetDistance(a_position + Vector3.UnitX);
+            float distLeft = GetDistance(a_position - Vector3.UnitX);
+            float distFor = GetDistance(a_position + Vector3.UnitZ);
+            float distBack = GetDistance(a_position - Vector3.UnitZ);
+            float distUp = GetDistance(a_position + Vector3.UnitY);
+            float distDown = GetDistance(a_position - Vector3.UnitY);
+
+            Vector3 normal = Vector3.Zero;
+
+            normal += distFor * Vector3.UnitZ;
+            normal += distBack * -Vector3.UnitZ;
+            normal += distRight * Vector3.UnitX;
+            normal += distLeft * -Vector3.UnitX;
+            normal += distUp * Vector3.UnitY;
+            normal += distDown * -Vector3.UnitY;
+
+            if (normal != Vector3.Zero)
+            {
+                normal.Normalize();
+            }
+
+            return -normal;
+        }
         public void SnapToVoxelGrid (Vector3 a_position, out Vector3 a_chunkIndex, out int a_x, out int a_y, out int a_z)
         {
             int gridDepth = GridDepth;
