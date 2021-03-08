@@ -82,9 +82,19 @@ namespace Erde.Physics
             }
         }
 
+        public bool DebugDraw
+        {
+            get
+            {
+                return m_world.DebugDraw;
+            }
+        }
+
         public PhysicsEngine (bool a_threaded)
         {
+#if DEBUG_INFO
             Debug.Assert(Instance == null);
+#endif
             Instance = this;
             
             m_threaded = a_threaded;
@@ -209,6 +219,16 @@ namespace Erde.Physics
             }
         }
 
+        public void SetDebugDrawState(bool a_state)
+        {
+            while (m_world == null)
+            {
+                Thread.Yield();
+            }
+            
+            m_world.SetDebugDrawState(a_state);
+        }
+
         public void Update ()
         {
             m_time.Update();
@@ -222,6 +242,8 @@ namespace Erde.Physics
             {
                 collisionObject.Update();
             }
+
+            Gizmos.Clear();
 
             GameObject.PhysicsUpdateBehaviours();
         }

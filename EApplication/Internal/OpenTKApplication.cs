@@ -6,6 +6,8 @@ namespace Erde.Application.Internal
 {
     public class OpenTKApplication : NativeWindow, IApplication
     {
+        Application m_application;
+
         public bool WindowExists
         {
             get
@@ -41,6 +43,8 @@ namespace Erde.Application.Internal
         public OpenTKApplication(Application a_application, string a_title, GameWindowFlags a_displayMode) 
             : base(DisplayDevice.Default.Width / 2, DisplayDevice.Default.Height / 2, a_title, a_displayMode, GraphicsMode.Default, DisplayDevice.Default)
         {
+            m_application = a_application;
+
             WindowState = WindowState.Normal;
             // Fixes window drawing issues on Linux
             Visible = true;
@@ -48,8 +52,8 @@ namespace Erde.Application.Internal
             // Fixes weird bug with cursor being seen as visible and invisible
             CursorVisible = true;
 
-            Closing += a_application.CloseWindowEvent;
-            Resize += a_application.ResizeWindowEvent;
+            Closing += m_application.CloseWindowEvent;
+            Resize += m_application.ResizeWindowEvent;
         }   
 
         public void Update()

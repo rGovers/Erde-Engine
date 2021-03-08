@@ -10,35 +10,54 @@ namespace Erde.Physics
 {
     internal class DiscreteDynamicsWorld : IDisposable
     {
-        class BtDiscreteDynamicsWorld
-        {
-            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
-            public static extern IntPtr DiscreteDynamicsWorld_new (IntPtr a_dispatcher, IntPtr a_broadphase, IntPtr a_solver, IntPtr a_configuration);
-            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
-            public static extern void DiscreteDynamicsWorld_delete (IntPtr a_ptr);
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void DrawLineEvent(float a_xA, float a_yA, float a_zA, float a_xB, float a_yB, float a_zB, float a_r, float a_g, float a_b, float a_a);
+        // public delegate void DrawLineEvent();
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void ErrorEvent(IntPtr a_str);
 
-            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
-            public static extern void DiscreteDynamicsWorld_setGravity (IntPtr a_ptr, float a_x, float a_y, float a_z);
-            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
-            public static extern void DiscreteDynamicsWorld_stepSimulation (IntPtr a_ptr, float a_timeStep, int a_maxSteps, float a_fixedTimeStep);
+        [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
+        static extern IntPtr DiscreteDynamicsWorld_new (IntPtr a_dispatcher, IntPtr a_broadphase, IntPtr a_solver, IntPtr a_configuration);
+        [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
+        static extern void DiscreteDynamicsWorld_delete (IntPtr a_ptr);
 
-            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
-            public static extern void DiscreteDynamicsWorld_addRigidBody (IntPtr a_ptr, IntPtr a_rigidBody);
-            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
-            public static extern void DiscreteDynamicsWorld_removeRigidBody (IntPtr a_ptr, IntPtr a_rigidBody);
+        [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
+        static extern void DiscreteDynamicsWorld_setGravity (IntPtr a_ptr, float a_x, float a_y, float a_z);
+        [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
+        static extern void DiscreteDynamicsWorld_stepSimulation (IntPtr a_ptr, float a_timeStep, int a_maxSteps, float a_fixedTimeStep);
 
-            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
-            public static extern void DiscreteDynamicsWorld_addCollisionObject (IntPtr a_ptr, IntPtr a_collisionObject);
-            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
-            public static extern void DiscreteDynamicsWorld_removeCollisionObject (IntPtr a_ptr, IntPtr a_collisionObject);
+        [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
+        static extern void DiscreteDynamicsWorld_debugDrawWorld (IntPtr a_ptr);
 
-            [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
-            public static extern void DiscreteDynamicsWorld_raycastClosest (IntPtr a_ptr, float a_xF, float a_yF, float a_zF, float a_xT, float a_yT, float a_zT, out IntPtr a_object, out float a_xN, out float a_yN, out float a_zN, out float a_xP, out float a_yP, out float a_zP);
-        }
+        [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
+        static extern void DiscreteDynamicsWorld_addRigidBody (IntPtr a_ptr, IntPtr a_rigidBody);
+        [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
+        static extern void DiscreteDynamicsWorld_removeRigidBody (IntPtr a_ptr, IntPtr a_rigidBody);
+
+        [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
+        static extern void DiscreteDynamicsWorld_addCollisionObject (IntPtr a_ptr, IntPtr a_collisionObject);
+        [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
+        static extern void DiscreteDynamicsWorld_removeCollisionObject (IntPtr a_ptr, IntPtr a_collisionObject);
+
+        [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
+        static extern void DiscreteDynamicsWorld_raycastClosest (IntPtr a_ptr, float a_xF, float a_yF, float a_zF, float a_xT, float a_yT, float a_zT, out IntPtr a_object, out float a_xN, out float a_yN, out float a_zN, out float a_xP, out float a_yP, out float a_zP);
+
+        [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
+        static extern void DiscreteDynamicsWorld_setDebugDrawer(IntPtr a_ptr, IntPtr a_drawer);
+
+        [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
+        static extern IntPtr ENativeDebugDrawer_new(DrawLineEvent a_drawLineEvent, ErrorEvent a_errorEvent);
+        [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
+        static extern void ENativeDebugDrawer_delete(IntPtr a_ptr);
 
         Vector3                             m_gravity;
 
         IntPtr                              m_objectPtr;
+        IntPtr                              m_debugDrawerPtr;
+
+        // Variables to stop GC collecting objects
+        DrawLineEvent                       m_drawLineEvent;
+        ErrorEvent                          m_errorEvent;
 
         Dictionary<IntPtr, CollisionObject> m_objectLookup;
 
@@ -52,22 +71,48 @@ namespace Erde.Physics
             {
                 m_gravity = value;
 
-                BtDiscreteDynamicsWorld.DiscreteDynamicsWorld_setGravity(m_objectPtr, m_gravity.X, m_gravity.Y, m_gravity.Z);
+                DiscreteDynamicsWorld_setGravity(m_objectPtr, m_gravity.X, m_gravity.Y, m_gravity.Z);
+            }
+        }
+
+        public bool DebugDraw
+        {
+            get
+            {
+                return m_debugDrawerPtr != IntPtr.Zero;
             }
         }
 
         public DiscreteDynamicsWorld (CollisionDispatcher a_dispatcher, BroadphaseInterface a_broadphase, ConstraintSolver a_solver, CollisionConfiguration a_configuration)
         {
-            m_objectPtr = BtDiscreteDynamicsWorld.DiscreteDynamicsWorld_new(a_dispatcher.Ptr, a_broadphase.Ptr, a_solver.Ptr, a_configuration.Ptr);
+            m_objectPtr = DiscreteDynamicsWorld_new(a_dispatcher.Ptr, a_broadphase.Ptr, a_solver.Ptr, a_configuration.Ptr);
+            m_debugDrawerPtr = IntPtr.Zero;
+
+            m_drawLineEvent = DrawLine;
+            m_errorEvent = Error;
 
             m_objectLookup = new Dictionary<IntPtr, CollisionObject>();
+        }
+
+        void DrawLine(float a_xA, float a_yA, float a_zA, float a_xB, float a_yB, float a_zB, float a_r, float a_g, float a_b, float a_a)
+        {
+            Gizmos.DrawLine(new Vector3(a_xA, a_yA, a_zA), new Vector3(a_xB, a_yB, a_zB), 0.1f, new Vector4(a_r, a_g, a_b, a_a));
+        }
+        void Error(IntPtr a_errorStr)
+        {
+            string str = Marshal.PtrToStringAnsi(a_errorStr);
+
+            if (!string.IsNullOrEmpty(str))
+            {
+                InternalConsole.Error(str);
+            }
         }
 
         internal void AddRigidbody (Rigidbody a_rigidbody)
         {
             IntPtr ptr = a_rigidbody.Ptr;
 
-            BtDiscreteDynamicsWorld.DiscreteDynamicsWorld_addRigidBody(m_objectPtr, ptr);
+            DiscreteDynamicsWorld_addRigidBody(m_objectPtr, ptr);
 
             m_objectLookup.Add(ptr, a_rigidbody);
         }
@@ -75,7 +120,7 @@ namespace Erde.Physics
         {
             IntPtr ptr = a_rigidbody.Ptr;
 
-            BtDiscreteDynamicsWorld.DiscreteDynamicsWorld_removeRigidBody(m_objectPtr, ptr);
+            DiscreteDynamicsWorld_removeRigidBody(m_objectPtr, ptr);
 
             m_objectLookup.Remove(ptr);
         }
@@ -84,7 +129,7 @@ namespace Erde.Physics
         {
             IntPtr ptr = a_collisionObject.Ptr;
 
-            BtDiscreteDynamicsWorld.DiscreteDynamicsWorld_addCollisionObject(m_objectPtr, ptr);
+            DiscreteDynamicsWorld_addCollisionObject(m_objectPtr, ptr);
 
             m_objectLookup.Add(ptr, a_collisionObject);
         }
@@ -92,17 +137,39 @@ namespace Erde.Physics
         {
             IntPtr ptr = a_collisionObject.Ptr;
 
-            BtDiscreteDynamicsWorld.DiscreteDynamicsWorld_removeCollisionObject(m_objectPtr, ptr);
+            DiscreteDynamicsWorld_removeCollisionObject(m_objectPtr, ptr);
 
             m_objectLookup.Remove(ptr);
         }
 
-        public void Update ()
+        internal void SetDebugDrawState(bool a_state)
         {
-            BtDiscreteDynamicsWorld.DiscreteDynamicsWorld_stepSimulation(m_objectPtr, (float)PhysicsTime.DeltaTime, 10, 1.0f / 60.0f);
+            if (a_state && m_debugDrawerPtr == IntPtr.Zero)
+            {
+                m_debugDrawerPtr = ENativeDebugDrawer_new(m_drawLineEvent, m_errorEvent);
+
+                DiscreteDynamicsWorld_setDebugDrawer(m_objectPtr, m_debugDrawerPtr);
+            }
+            else if (!a_state && m_debugDrawerPtr != IntPtr.Zero)
+            {
+                DiscreteDynamicsWorld_setDebugDrawer(m_objectPtr, IntPtr.Zero);
+                
+                ENativeDebugDrawer_delete(m_debugDrawerPtr);
+                m_debugDrawerPtr = IntPtr.Zero;
+            }
         }
 
-        public bool RaycastClosest (Vector3 a_from, Vector3 a_to, out RaycastResultClosest a_result)
+        internal void Update ()
+        {
+            DiscreteDynamicsWorld_stepSimulation(m_objectPtr, (float)PhysicsTime.DeltaTime, 10, 1.0f / 60.0f);
+
+            if (m_debugDrawerPtr != IntPtr.Zero)
+            {
+                DiscreteDynamicsWorld_debugDrawWorld(m_objectPtr);
+            }
+        }
+
+        internal bool RaycastClosest (Vector3 a_from, Vector3 a_to, out RaycastResultClosest a_result)
         {
             a_result = new RaycastResultClosest();
 
@@ -122,7 +189,7 @@ namespace Erde.Physics
             float pY;
             float pZ;
 
-            BtDiscreteDynamicsWorld.DiscreteDynamicsWorld_raycastClosest(m_objectPtr, a_from.X, a_from.Y, a_from.Z, a_to.X, a_to.Y, a_to.Z, out ptr, out nX, out nY, out nZ, out pX, out pY, out pZ);
+            DiscreteDynamicsWorld_raycastClosest(m_objectPtr, a_from.X, a_from.Y, a_from.Z, a_to.X, a_to.Y, a_to.Z, out ptr, out nX, out nY, out nZ, out pX, out pY, out pZ);
 
             a_result.HitObject = null;
 
@@ -145,7 +212,13 @@ namespace Erde.Physics
             Tools.VerifyObjectMemoryState(this, a_state);
 #endif
 
-            BtDiscreteDynamicsWorld.DiscreteDynamicsWorld_delete(m_objectPtr);
+            DiscreteDynamicsWorld_delete(m_objectPtr);
+
+            if (m_debugDrawerPtr != IntPtr.Zero)
+            {
+                ENativeDebugDrawer_delete(m_debugDrawerPtr);
+                m_debugDrawerPtr = IntPtr.Zero;
+            }
         }
 
         ~DiscreteDynamicsWorld ()

@@ -35,6 +35,44 @@ void main()
     fragColor = texture(diffuse, vec2(vUV.x, 1 - vUV.y));
 }";
 
+        public const string GIZMO_PIXEL = @"
+#version 450
+
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(location = 0) in vec4 vColor;
+
+layout(location = 0) out vec4 fragColor;
+
+void main()
+{
+    fragColor = vec4(vColor.xyz, 1);
+}";
+
+        public const string GIZMO_VERTEX = @"
+#version 450
+
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(location = 0) in vec4 position;
+layout(location = 1) in vec4 color;
+
+layout(std140, binding = 1) uniform camera
+{
+    mat4 View;
+    mat4 Projection;
+    mat4 CameraTransform;
+    mat4 ViewProjection;
+};
+
+layout(location = 0) out vec4 vColor;
+
+void main()
+{
+    gl_Position = ViewProjection * position;
+    vColor = color;
+}";
+
         public const string DIRECTIONAL_VERTEX = @"
 #version 450
 
@@ -105,8 +143,8 @@ void main()
             PixelShader pixelShaderInverted = new PixelShader(DEFFERED_PIXEL_INVERTED, a_pipeline);
             VertexShader vertexShader = new VertexShader(QUAD_TRANSFORM_VERTEX, a_pipeline);
 
-            TRANSFORM_IMAGE_SHADER = new Program(pixelShader, vertexShader, null, 0, false, a_pipeline);
-            TRANSFORM_IMAGE_SHADER_INVERTED = new Program(pixelShaderInverted, vertexShader, null, 0, false, a_pipeline);
+            TRANSFORM_IMAGE_SHADER = new Program(pixelShader, vertexShader, null, 0, false, e_CullingMode.Back, a_pipeline);
+            TRANSFORM_IMAGE_SHADER_INVERTED = new Program(pixelShaderInverted, vertexShader, null, 0, false, e_CullingMode.Back, a_pipeline);
 
 #if DEBUG_INFO
             Pipeline.GLError("Init Shaders: ");

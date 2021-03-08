@@ -115,7 +115,7 @@ namespace Erde.Graphics.Lights
                     ModelVertexInfo[] vertexLayout = ModelVertexInfo.GetVertexInfo<Vertex>();
                     int size = Marshal.SizeOf<Vertex>();
 
-                    ProgramInstance = new Program(null, new VertexShader(Shaders.DIRECTIONAL_VERTEX, m_pipeline), vertexLayout, size, false, m_pipeline);
+                    ProgramInstance = new Program(null, new VertexShader(Shaders.DIRECTIONAL_VERTEX, m_pipeline), vertexLayout, size, false, e_CullingMode.Back, m_pipeline);
                 }
 
                 Far = 65;

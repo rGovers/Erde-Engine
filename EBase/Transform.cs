@@ -178,10 +178,19 @@ namespace Erde
         {
             if (Parent != null)
             {
-                return m_parent.ToMatrix() * (Matrix4.CreateScale(m_scale) * Matrix4.CreateFromQuaternion(m_rotation) * Matrix4.CreateTranslation(m_translation));
+                // return m_parent.ToMatrix() * (Matrix4.CreateScale(m_scale) * Matrix4.CreateFromQuaternion(m_rotation) * Matrix4.CreateTranslation(m_translation));
+
+                return(Matrix4.CreateScale(m_scale) * Matrix4.CreateFromQuaternion(m_rotation) * Matrix4.CreateTranslation(m_translation)) * m_parent.ToMatrix();
             }
 
             return Matrix4.CreateScale(m_scale) * Matrix4.CreateFromQuaternion(m_rotation) * Matrix4.CreateTranslation(m_translation);
+        }
+
+        public void FromMatrix(Matrix4 a_matrix)
+        {
+            m_translation = a_matrix.ExtractTranslation();
+            m_scale = a_matrix.ExtractScale();
+            m_rotation = a_matrix.ExtractRotation();
         }
 
         public void SetStatic ()

@@ -26,6 +26,8 @@ namespace Erde.Graphics.Internal
 
         Program                        m_defferedShader;
 
+        GizmoRenderer                  m_gizmoRenderer;
+
         MultiRenderTexture             m_renderTarget;
         DrawBuffersEnum[]              m_drawBuffers;
 
@@ -61,6 +63,8 @@ namespace Erde.Graphics.Internal
         {
             Pipeline pipeline = m_graphics.Pipeline;
 
+            m_gizmoRenderer = new GizmoRenderer(pipeline);
+
             ModelVertexInfo[] vertexLayout = ModelVertexInfo.GetVertexInfo<Vertex>();
             int vertexSize = Marshal.SizeOf<Vertex>();
 
@@ -71,6 +75,7 @@ namespace Erde.Graphics.Internal
                 vertexLayout,
                 vertexSize,
                 false,
+                e_CullingMode.Back,
                 pipeline
             );
 
@@ -530,6 +535,11 @@ namespace Erde.Graphics.Internal
                                 LightingPass();
                             }
 
+                            m_gizmoRenderer.Update();
+
+                            GL.Enable(EnableCap.CullFace);
+                            GL.CullFace(CullFaceMode.Back);
+
                             if (cam.PostProcessing != null)
                             {
                                 cam.PostProcessing.Effect(renderTexture, cam, m_renderTarget.RenderTextures[1], m_renderTarget.RenderTextures[2], m_renderTarget.DepthBuffer);
@@ -555,6 +565,8 @@ namespace Erde.Graphics.Internal
 
         public void Dispose()
         {
+            m_gizmoRenderer.Dispose();
+
             m_defferedShader.Dispose();
 
             m_renderTarget.Dispose();

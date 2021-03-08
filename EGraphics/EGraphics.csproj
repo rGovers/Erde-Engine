@@ -53,6 +53,7 @@
     <Compile Include="DrawingContainer.cs" />
     <Compile Include="FontCollection.cs" />
     <Compile Include="Frustum.cs" />
+    <Compile Include="GizmoRenderer.cs" />
     <Compile Include="Graphics.cs" />
     <Compile Include="GraphicsCommand.cs" />
     <Compile Include="GUI\Canvas.cs" />

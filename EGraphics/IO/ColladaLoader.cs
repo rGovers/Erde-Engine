@@ -1701,6 +1701,8 @@ namespace Erde.Graphics.IO
                         skeletonNode = new SkeletonNode((ushort)m_skeletonNodes.Count, sid);
                     }                    
 
+                    skeletonNode.Transform = a_node.Transform;
+
                     m_skeletonNameLookup.Add(sid, skeletonNode);
                     m_skeletonNodes.Add(skeletonNode);
                 }

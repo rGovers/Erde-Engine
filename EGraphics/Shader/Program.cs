@@ -4,6 +4,14 @@ using System;
 
 namespace Erde.Graphics.Shader
 {
+    public enum e_CullingMode
+    {
+        None = 0,
+        Front = 1,
+        Back = 2,
+        FrontAndBack = 4
+    }
+
     public class Program : IGraphicsObject
     {
         IProgram        m_internalObject;
@@ -15,6 +23,7 @@ namespace Erde.Graphics.Shader
         VertexShader    m_vertexShader;
 
         bool            m_depthTest;
+        e_CullingMode   m_cullingMode;
 
         public PixelShader PixelShader
         {
@@ -56,6 +65,14 @@ namespace Erde.Graphics.Shader
             }
         }
 
+        public e_CullingMode CullingMode
+        {
+            get
+            {
+                return m_cullingMode;
+            }
+        }
+
         public bool Initialized
         {
             get
@@ -64,17 +81,17 @@ namespace Erde.Graphics.Shader
             }
         }
 
-        public Program(VertexShader a_vertexShader, ModelVertexInfo[] a_vertLayout, int a_vertexSize, bool a_depthTest, Pipeline a_pipeline) 
-            : this(null, null, a_vertexShader, a_vertLayout, a_vertexSize, a_depthTest, a_pipeline)
+        public Program(VertexShader a_vertexShader, ModelVertexInfo[] a_vertLayout, int a_vertexSize, bool a_depthTest, e_CullingMode a_cullingMode, Pipeline a_pipeline) 
+            : this(null, null, a_vertexShader, a_vertLayout, a_vertexSize, a_depthTest, a_cullingMode, a_pipeline)
         {
         }
 
-        public Program (PixelShader a_pixelShader, VertexShader a_vertexShader, ModelVertexInfo[] a_vertLayout, int a_vertexSize, bool a_depthTest, Pipeline a_pipeline)
-            : this(a_pixelShader, null, a_vertexShader, a_vertLayout, a_vertexSize, a_depthTest, a_pipeline)
+        public Program (PixelShader a_pixelShader, VertexShader a_vertexShader, ModelVertexInfo[] a_vertLayout, int a_vertexSize, bool a_depthTest, e_CullingMode a_cullingMode, Pipeline a_pipeline)
+            : this(a_pixelShader, null, a_vertexShader, a_vertLayout, a_vertexSize, a_depthTest, a_cullingMode, a_pipeline)
         {
         }
 
-        public Program (PixelShader a_pixelShader, GeometryShader a_geometryShader, VertexShader a_vertexShader, ModelVertexInfo[] a_vertLayout, int a_vertexSize, bool a_depthTest, Pipeline a_pipeline)
+        public Program (PixelShader a_pixelShader, GeometryShader a_geometryShader, VertexShader a_vertexShader, ModelVertexInfo[] a_vertLayout, int a_vertexSize, bool a_depthTest, e_CullingMode a_cullingMode, Pipeline a_pipeline)
         {
             m_pipeline = a_pipeline;
             
@@ -83,6 +100,7 @@ namespace Erde.Graphics.Shader
             m_vertexShader = a_vertexShader;
 
             m_depthTest = a_depthTest;
+            m_cullingMode = a_cullingMode;
 
             if (a_pipeline.ApplicationType == e_ApplicationType.Managed)
             {

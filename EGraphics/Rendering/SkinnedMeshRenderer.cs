@@ -84,7 +84,10 @@ namespace Erde.Graphics.Rendering
                 obj.Name = a_node.Name;
             }
 
-            m_transforms[a_node.Index] = obj.Transform;
+            Transform transform = obj.Transform;
+
+            m_transforms[a_node.Index] = transform;
+            transform.FromMatrix(a_node.Transform);
 
             IEnumerable<SkeletonNode> children = a_node.Children;
             foreach (SkeletonNode child in children)

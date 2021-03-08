@@ -59,6 +59,7 @@
     <Compile Include="DistanceField.cs" />
     <Compile Include="FastNoise.cs" />
     <Compile Include="GameObject.cs" />
+    <Compile Include="Gizmos.cs" />
     <Compile Include="InternalConsole.cs" />
     <Compile Include="IO\DriveFileSystem.cs" />
     <Compile Include="IO\IFileSystem.cs" />

@@ -2,6 +2,7 @@
 
 #include "BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h"
 
+#include "ENativeDebugDrawer.h"
 #include "Export.h"
 
 #include <iostream>
@@ -12,6 +13,8 @@ EExportFunc(void, DiscreteDynamicsWorld_delete(btDiscreteDynamicsWorld* a_ptr));
 EExportFunc(void, DiscreteDynamicsWorld_setGravity(btDiscreteDynamicsWorld* a_ptr, float a_x, float a_y, float a_z));
 EExportFunc(void, DiscreteDynamicsWorld_stepSimulation(btDiscreteDynamicsWorld* a_ptr, float a_timeStep, int a_maxSteps, float a_fixedTimeStep));
 
+EExportFunc(void, DiscreteDynamicsWorld_debugDrawWorld(btDiscreteDynamicsWorld* a_ptr));
+
 EExportFunc(void, DiscreteDynamicsWorld_addRigidBody(btDiscreteDynamicsWorld* a_ptr, btRigidBody* a_rigidBody));
 EExportFunc(void, DiscreteDynamicsWorld_removeRigidBody(btDiscreteDynamicsWorld* a_ptr, btRigidBody* a_rigidBody)); 
 
@@ -20,11 +23,15 @@ EExportFunc(void, DiscreteDynamicsWorld_removeCollisionObject(btDiscreteDynamics
 
 EExportFunc(void, DiscreteDynamicsWorld_raycastClosest(btDiscreteDynamicsWorld* a_ptr, float a_xF, float a_yF, float a_zF, float a_xT, float a_yT, float a_zT, const btCollisionObject*& a_object, float& a_xN, float& a_yN, float& a_zN, float& a_xP, float& a_yP, float& a_zP));
 
+EExportFunc(void, DiscreteDynamicsWorld_setDebugDrawer(btDiscreteDynamicsWorld* a_ptr, ENativeDebugDrawer* a_drawer));
+
 btDiscreteDynamicsWorld* DiscreteDynamicsWorld_new(btCollisionDispatcher* a_dispatcher, btBroadphaseInterface* a_broadphase, btConstraintSolver* a_solver, btCollisionConfiguration* a_configuration) { return new btDiscreteDynamicsWorld(a_dispatcher, a_broadphase, a_solver, a_configuration); } 
 void DiscreteDynamicsWorld_delete(btDiscreteDynamicsWorld* a_ptr) { delete a_ptr; }
 
 void DiscreteDynamicsWorld_setGravity(btDiscreteDynamicsWorld* a_ptr, float a_x, float a_y, float a_z) { a_ptr->setGravity(btVector3(a_x, a_y, a_z)); }
 void DiscreteDynamicsWorld_stepSimulation(btDiscreteDynamicsWorld* a_ptr, float a_timeStep, int a_maxSteps, float a_fixedTimeStep) { a_ptr->stepSimulation(a_timeStep, a_maxSteps, a_fixedTimeStep); }
+
+void DiscreteDynamicsWorld_debugDrawWorld(btDiscreteDynamicsWorld* a_ptr) { a_ptr->debugDrawWorld(); }
 
 void DiscreteDynamicsWorld_addRigidBody(btDiscreteDynamicsWorld* a_ptr, btRigidBody* a_rigidBody) { a_ptr->addRigidBody(a_rigidBody); }
 void DiscreteDynamicsWorld_removeRigidBody(btDiscreteDynamicsWorld* a_ptr, btRigidBody* a_rigidBody) { a_ptr->removeRigidBody(a_rigidBody); }
@@ -54,3 +61,5 @@ void DiscreteDynamicsWorld_raycastClosest(btDiscreteDynamicsWorld* a_ptr, float 
 		a_zP = callback.m_hitPointWorld.z();
 	}
 }
+
+void DiscreteDynamicsWorld_setDebugDrawer(btDiscreteDynamicsWorld* a_ptr, ENativeDebugDrawer* a_drawer) { a_ptr->setDebugDrawer(a_drawer); }

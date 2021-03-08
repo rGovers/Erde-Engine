@@ -73,6 +73,18 @@ namespace Erde.Graphics.Variables
             }
         }
 
+        public Matrix4 Transform
+        {
+            get
+            {
+                return m_transform;
+            }
+            set
+            {
+                m_transform = value;
+            }
+        }
+
         public SkeletonNode(ushort a_index, string a_name)
         {
             m_skeleton = null;
