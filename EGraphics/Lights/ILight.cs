@@ -5,8 +5,10 @@ namespace Erde.Graphics.Lights
 {
     public interface ILight : IGraphicsObject
     {
+        void CalculateSplits(Camera a_camera);
+
         void BindShadowMap (BindableContainer a_bindableContainer);
-        void BindShadowDrawing ();
+        Frustum BindShadowDrawing (int a_index, Camera a_camera);
 
         Material BindLightDrawing ();
         Graphics.LightContainer GetLightData ();

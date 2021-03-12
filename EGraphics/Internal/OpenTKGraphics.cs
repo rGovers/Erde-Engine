@@ -254,7 +254,7 @@ namespace Erde.Graphics.Internal
             return cont;
         }
 
-        void ShadowPass ()
+        void ShadowPass (Camera a_cam)
         {
             Frustum frustrum;
 
@@ -270,40 +270,50 @@ namespace Erde.Graphics.Internal
             {
                 if (light.ShadowMapped)
                 {
-                    light.BindShadowDrawing();
+                    light.CalculateSplits(a_cam);
 
-#if DEBUG_INFO
-                    Pipeline.GLError("Graphics: Binding Shadow Drawing: ");
-#endif
-
-                    GL.Clear(ClearBufferMask.DepthBufferBit);
-
-                    frustrum = new Frustum(light.View * light.Projection);
-
-                    foreach (DrawingContainer draw in m_drawingObjects)
+                    int mapCount = light.MapCount;
+                    for (int i = 0; i < mapCount; ++i)
                     {
-                        foreach (DrawingContainer.RenderingContainer rend in draw.Renderers)
+                        frustrum = light.BindShadowDrawing(i, a_cam);
+
+                        if (frustrum == null)
                         {
-                            Renderer renderer = rend.Renderer;
-                            if (renderer.Visible)
+                            continue;
+                        }
+
+                        GL.Clear(ClearBufferMask.DepthBufferBit);
+
+                        foreach (DrawingContainer draw in m_drawingObjects)
+                        {
+                            foreach (DrawingContainer.RenderingContainer rend in draw.Renderers)
                             {
-                                Transform transform = renderer.Transform;
-                                if (transform != null)
+                                Renderer renderer = rend.Renderer;
+                                if (renderer.Visible)
                                 {
-                                    lock (transform.GameObject)
+                                    Transform transform = renderer.Transform;
+                                    if (transform != null)
                                     {
-                                        Vector3 translation = transform.Translation;
-                                        float radius = renderer.Radius;
-
-                                        if (radius != -1 && !frustrum.CompareSphere(translation, radius))
+                                        lock (transform.GameObject)
                                         {
-                                            continue;
+                                            Vector3 translation = transform.Translation;
+                                            Vector3 scale = transform.Scale;
+
+                                            float max = (float)Math.Max(scale.X, Math.Max(scale.Y, scale.Z));
+
+                                            float radius = renderer.Radius;
+                                            float finalRadius = radius * max;
+
+                                            if (radius != -1 && !frustrum.CompareSphere(translation, finalRadius))
+                                            {
+                                                continue;
+                                            }
+
+                                            Matrix4 transformMat = transform.ToMatrix();
+                                            GL.UniformMatrix4(1, false, ref transformMat);
+
+                                            renderer.DrawShadow(light);
                                         }
-
-                                        Matrix4 transformMat = transform.ToMatrix();
-                                        GL.UniformMatrix4(1, false, ref transformMat);
-
-                                        renderer.DrawShadow(light);
                                     }
                                 }
                             }
@@ -363,8 +373,14 @@ namespace Erde.Graphics.Internal
                             lock (transform.GameObject)
                             {
                                 Vector3 translation = transform.Translation;
+                                Vector3 scale = transform.Scale;
 
-                                if (!a_cameraFrutrum.CompareSphere(translation, renderer.Radius))
+                                float max = (float)Math.Max(scale.X, Math.Max(scale.Y, scale.Z));
+
+                                float radius = renderer.Radius;
+                                float finalRadius = radius * max;
+
+                                if (radius != -1 && !a_cameraFrutrum.CompareSphere(translation, finalRadius))
                                 {
                                     continue;
                                 }
@@ -472,11 +488,6 @@ namespace Erde.Graphics.Internal
 
         void Draw ()
         {
-            if (Light.LightList != null)
-            {
-                ShadowPass();
-            }
-
             List<Camera> cameraList = Camera.CameraList;
             if (cameraList != null)
             {
@@ -491,6 +502,11 @@ namespace Erde.Graphics.Internal
                             if (transform == null)
                             {
                                 continue;
+                            }
+
+                            if (Light.LightList != null)
+                            {
+                                ShadowPass(cam);
                             }
 
                             GL.Viewport(0, 0, m_renderTarget.Width, m_renderTarget.Height);

@@ -16,18 +16,12 @@ namespace Erde.Graphics.Lights
 
         Pipeline        m_pipeline;
 
-        Matrix4         m_view;
-        Matrix4         m_projection;
+        Matrix4[]       m_view;
+        Matrix4[]       m_projection;
 
         ILight          m_internalObject;
 
-        public static int MapResolution
-        {
-            get
-            {
-                return 4096;
-            }
-        }
+        public const int MapResolution = 2048;
 
         public static Material LightMaterial
         {
@@ -41,19 +35,11 @@ namespace Erde.Graphics.Lights
             }
         }
 
-        public override Matrix4 View
+        public override int MapCount
         {
             get
             {
-                return m_view;
-            }
-        }
-
-        public override Matrix4 Projection
-        {
-            get
-            {
-                return m_projection;
+                return 8;
             }
         }
 
@@ -65,14 +51,18 @@ namespace Erde.Graphics.Lights
             }
         }
 
+        public override void CalculateSplits(Camera a_camera)
+        {
+            m_internalObject.CalculateSplits(a_camera);
+        }
+
         public override void BindShadowMap (BindableContainer a_bindableContainer)
         {
             m_internalObject.BindShadowMap(a_bindableContainer);
         }
-
-        public override void BindShadowDrawing ()
+        public override Frustum BindShadowDrawing (int a_index, Camera a_camera)
         {
-            m_internalObject.BindShadowDrawing();
+            return m_internalObject.BindShadowDrawing (a_index, a_camera);
         }
 
         public override Material BindLightDrawing()
@@ -98,6 +88,11 @@ namespace Erde.Graphics.Lights
         public DirectionalLight (bool a_shadowMap, Pipeline a_pipeline) : base(a_shadowMap)
         {
             m_pipeline = a_pipeline;
+
+            int mapCount = MapCount;
+
+            m_view = new Matrix4[mapCount];
+            m_projection = new Matrix4[mapCount];
 
             if (a_pipeline.ApplicationType == e_ApplicationType.Managed)
             {
@@ -146,10 +141,19 @@ namespace Erde.Graphics.Lights
             GC.SuppressFinalize(this);
         }
 
-        internal void SetViewProjection(Matrix4 a_view, Matrix4 a_proj)
+        internal void SetViewProjection(Matrix4 a_view, Matrix4 a_proj, int a_index)
         {
-            m_view = a_view;
-            m_projection = a_proj;
+            m_view[a_index] = a_view;
+            m_projection[a_index] = a_proj;
+        }
+
+        public override Matrix4 GetView(int a_index)
+        {
+            return m_view[a_index];
+        }
+        public override Matrix4 GetProjection(int a_index)
+        {
+            return m_projection[a_index];
         }
 
         public void ModifyObject ()
