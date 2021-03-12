@@ -1640,7 +1640,7 @@ namespace Erde.Graphics.IO
                 uint vertexData = triangles.Data[triIndex + vertexInput.Offset];
                 for (int j = 0; j < 4; ++j)
                 {
-                    vert.Bones[j] = (float)boneIndicies[vertexData, j];
+                    vert.Bones[j] = boneIndicies[vertexData, j] / 127.0f;
                     vert.Weights[j] = weights[vertexData, j];
                 }
 

@@ -340,14 +340,17 @@ namespace Erde.Voxel
             vertexInfoCollection[0].Offset = Marshal.OffsetOf<ChunkVertex>("Position");
             vertexInfoCollection[0].Count = 4;
             vertexInfoCollection[0].Type = e_FieldType.Float;
+            vertexInfoCollection[0].Normalize = false;
 
             vertexInfoCollection[1].Offset = Marshal.OffsetOf<ChunkVertex>("Normal");
             vertexInfoCollection[1].Count = 3;
             vertexInfoCollection[1].Type = e_FieldType.Float;
+            vertexInfoCollection[1].Normalize = false;
 
             vertexInfoCollection[2].Offset = Marshal.OffsetOf<ChunkVertex>("Color");
             vertexInfoCollection[2].Count = 4;
             vertexInfoCollection[2].Type = e_FieldType.UnsignedByte;
+            vertexInfoCollection[2].Normalize = true;
 
             m_model.SetModelData<ChunkVertex>(vertices.ToArray(), indicies.ToArray(), radius, vertexInfoCollection);
         }

@@ -20,6 +20,7 @@ namespace Erde.Graphics
         public IntPtr Offset;
         public uint Count;
         public e_FieldType Type;
+        public bool Normalize;
 
         public static ModelVertexInfo[] GetVertexInfo<T>()
         {
@@ -39,7 +40,8 @@ namespace Erde.Graphics
                     {
                         Offset = Marshal.OffsetOf<T>(field.Name),
                         Count = 1,
-                        Type = e_FieldType.Float
+                        Type = e_FieldType.Float,
+                        Normalize = false
                     });
                 } 
                 else if (fieldType == typeof(int))
@@ -48,7 +50,8 @@ namespace Erde.Graphics
                     {
                         Offset = Marshal.OffsetOf<T>(field.Name),
                         Count = 1,
-                        Type = e_FieldType.Int
+                        Type = e_FieldType.Int,
+                        Normalize = false
                     });
                 }  
                 else if (fieldType == typeof(Vector2))
@@ -57,7 +60,8 @@ namespace Erde.Graphics
                     {
                         Offset = Marshal.OffsetOf<T>(field.Name),
                         Count = 2,
-                        Type = e_FieldType.Float
+                        Type = e_FieldType.Float,
+                        Normalize = false
                     });
                 }
                 else if (fieldType == typeof(Vector3))
@@ -66,7 +70,8 @@ namespace Erde.Graphics
                     {
                         Offset = Marshal.OffsetOf<T>(field.Name),
                         Count = 3,
-                        Type = e_FieldType.Float
+                        Type = e_FieldType.Float,
+                        Normalize = false
                     });
                 }
                 else if (fieldType == typeof(Vector4))
@@ -75,7 +80,8 @@ namespace Erde.Graphics
                     {
                         Offset = Marshal.OffsetOf<T>(field.Name),
                         Count = 4,
-                        Type = e_FieldType.Float
+                        Type = e_FieldType.Float,
+                        Normalize = false
                     });
                 }
                 else if (fieldType == typeof(uint))
@@ -84,7 +90,8 @@ namespace Erde.Graphics
                     {
                         Offset = Marshal.OffsetOf<T>(field.Name),
                         Count = 1,
-                        Type = e_FieldType.UnsignedInt
+                        Type = e_FieldType.UnsignedInt,
+                        Normalize = false
                     });
                 }
             }

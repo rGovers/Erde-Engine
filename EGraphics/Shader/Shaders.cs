@@ -89,19 +89,15 @@ layout(location = 128) uniform mat4 BoneMatrices[127];
 
 void main()
 {
-    if (weights == vec4(0, 0, 0, 0))
-    {
-        gl_Position = lvp * world * position;
-    }
-    else
-    {
-        mat4 mat = BoneMatrices[int(bones.x)] * weights.x;
-        mat += BoneMatrices[int(bones.y)] * weights.y;
-        mat += BoneMatrices[int(bones.z)] * weights.z;
-        mat += BoneMatrices[int(bones.w)] * weights.w;
+    float s = 1 - max(sign(weights.x + weights.y + weights.z + weights.w), 0.0f);
 
-        gl_Position = lvp * world * mat * position;
-    }
+    mat4 mat = mat4(s);
+    mat += BoneMatrices[int(bones.x * 127)] * weights.x;
+    mat += BoneMatrices[int(bones.y * 127)] * weights.y;
+    mat += BoneMatrices[int(bones.z * 127)] * weights.z;
+    mat += BoneMatrices[int(bones.w * 127)] * weights.w;
+
+    gl_Position = lvp * (world * (mat * position));
 }";
         public const string QUAD_VERTEX = @"
 #version 450

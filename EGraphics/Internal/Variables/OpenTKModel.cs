@@ -124,7 +124,7 @@ namespace Erde.Graphics.Internal.Variables
                 }
 
                 GL.EnableVertexAttribArray(i);
-                GL.VertexAttribPointer(i, (int)a_vertexInfo[i].Count, fieldType, false, vertexSize, a_vertexInfo[i].Offset);
+                GL.VertexAttribPointer(i, (int)a_vertexInfo[i].Count, fieldType, a_vertexInfo[i].Normalize, vertexSize, a_vertexInfo[i].Offset);
             }
         }
     }

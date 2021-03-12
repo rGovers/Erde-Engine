@@ -111,7 +111,7 @@ namespace Erde
         {
             get
             {
-                return Quaternion.ToAxisAngle();
+                return m_rotation.ToAxisAngle();
             }
             set
             {
@@ -144,7 +144,7 @@ namespace Erde
         {
             get
             {
-                return Matrix3.CreateFromQuaternion(Quaternion);
+                return Matrix3.CreateFromQuaternion(m_rotation);
             }
             set
             {
@@ -178,8 +178,6 @@ namespace Erde
         {
             if (Parent != null)
             {
-                // return m_parent.ToMatrix() * (Matrix4.CreateScale(m_scale) * Matrix4.CreateFromQuaternion(m_rotation) * Matrix4.CreateTranslation(m_translation));
-
                 return(Matrix4.CreateScale(m_scale) * Matrix4.CreateFromQuaternion(m_rotation) * Matrix4.CreateTranslation(m_translation)) * m_parent.ToMatrix();
             }
 
