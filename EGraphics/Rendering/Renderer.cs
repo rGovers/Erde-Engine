@@ -87,6 +87,8 @@ namespace Erde.Graphics.Rendering
 
         bool               m_visible;
 
+        bool               m_shadowDraw;
+
         protected Graphics m_graphics;
 
         public abstract uint Indices
@@ -104,6 +106,18 @@ namespace Erde.Graphics.Rendering
             get
             {
                 return m_graphics;
+            }
+        }
+
+        public bool ShadowDraw
+        {
+            get
+            {
+                return m_shadowDraw;
+            }
+            set
+            {
+                m_shadowDraw = value;
             }
         }
 
@@ -146,6 +160,7 @@ namespace Erde.Graphics.Rendering
         {
             m_material = null;
             m_visible = true;
+            m_shadowDraw = true;
         }
 
         void Dispose (bool a_state)
@@ -154,7 +169,10 @@ namespace Erde.Graphics.Rendering
             Tools.VerifyObjectMemoryState(this, a_state);
 #endif
 
-            m_graphics.RemoveObject(this);
+            if (m_graphics != null)
+            {
+                m_graphics.RemoveObject(this);
+            }
         }
 
         ~Renderer ()

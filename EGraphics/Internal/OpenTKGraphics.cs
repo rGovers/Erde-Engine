@@ -29,6 +29,7 @@ namespace Erde.Graphics.Internal
         GizmoRenderer                  m_gizmoRenderer;
 
         MultiRenderTexture             m_renderTarget;
+        MultiRenderTexture             m_transparentRenderTarget;
         DrawBuffersEnum[]              m_drawBuffers;
 
         public MultiRenderTexture DefferedOutput
@@ -36,6 +37,14 @@ namespace Erde.Graphics.Internal
             get
             {
                 return m_renderTarget;
+            }
+        }
+
+        public MultiRenderTexture TransparentDefferedOutput
+        {
+            get
+            {
+                return m_transparentRenderTarget;
             }
         }
 
@@ -85,6 +94,7 @@ namespace Erde.Graphics.Internal
             const int buffCount = 3;
 
             m_renderTarget = new MultiRenderTexture(buffCount, 1920, 1080, pipeline);
+            m_transparentRenderTarget = new MultiRenderTexture(buffCount, 1920, 1080, pipeline);
 
             m_drawBuffers = new DrawBuffersEnum[buffCount];
             for (int i = 0; i < buffCount; ++i)
@@ -208,7 +218,7 @@ namespace Erde.Graphics.Internal
 
         void BindTransform (Transform a_transform, ref int a_ubo)
         {
-            if ((a_transform.StaticState & 0x1 << 1) == 0)
+            if (a_ubo == -1 || (a_transform.StaticState & 0x1 << 1) == 0)
             {
                 if (a_ubo == -1)
                 {
@@ -240,6 +250,10 @@ namespace Erde.Graphics.Internal
             }
 
             GL.BindBufferBase(BufferRangeTarget.UniformBuffer, Material.TransformUBOIndex, a_ubo);
+
+#if DEBUG_INFO
+            Pipeline.GLError("Graphics: Binding Static Transform: ");
+#endif
         }
 
         BindableContainer BindMaterial (Material a_material)
@@ -258,11 +272,7 @@ namespace Erde.Graphics.Internal
         {
             Frustum frustrum;
 
-            LinkedList<Light> lights;
-            lock (Light.LightList)
-            {
-                lights = Light.LightList;
-            }
+            LinkedList<Light> lights = Light.LightList;
 
             GL.Enable(EnableCap.DepthTest);
 
@@ -285,7 +295,7 @@ namespace Erde.Graphics.Internal
                         foreach (DrawingContainer.RenderingContainer rend in draw.Renderers)
                         {
                             Renderer renderer = rend.Renderer;
-                            if (renderer.Visible)
+                            if (renderer.ShadowDraw && renderer.Visible)
                             {
                                 Transform transform = renderer.Transform;
                                 if (transform != null)
@@ -337,14 +347,60 @@ namespace Erde.Graphics.Internal
 #endif
         }
 
-        void DeferredPass (Vector3 a_cameraPosition, Vector3 a_cameraForward, Frustum a_cameraFrutrum, Camera a_camera)
+        void DeferredPass (Vector3 a_cameraPosition, Vector3 a_cameraForward, Frustum a_cameraFrutrum, Camera a_camera, e_TransparencyMode a_transparencyMode)
         {
             foreach (DrawingContainer draw in m_drawingObjects)
             {
                 Material material = draw.Material;
-                int progHandle = ((OpenTKProgram)material.Program.InternalObject).Handle;
+                if ((material.Transparency & a_transparencyMode) == 0)
+                {
+                    continue;
+                }
+                
+                Program program = material.Program;
+                int progHandle = ((OpenTKProgram)program.InternalObject).Handle;
 
                 GL.UseProgram(progHandle);
+
+                if (program.DepthTest)
+                {
+                    GL.Enable(EnableCap.DepthTest);
+                }
+                else
+                {
+                    GL.Disable(EnableCap.DepthTest);
+                }
+
+                switch (program.CullingMode)
+                {
+                    case e_CullingMode.None:
+                    {
+                        GL.Disable(EnableCap.CullFace);
+
+                        break;
+                    }
+                    case e_CullingMode.Front:
+                    {
+                        GL.Enable(EnableCap.CullFace);
+                        GL.CullFace(CullFaceMode.Front);
+
+                        break;
+                    }
+                    case e_CullingMode.Back:
+                    {
+                        GL.Enable(EnableCap.CullFace);
+                        GL.CullFace(CullFaceMode.Back);
+
+                        break;
+                    }
+                    case e_CullingMode.FrontAndBack:
+                    {
+                        GL.Enable(EnableCap.CullFace);
+                        GL.CullFace(CullFaceMode.FrontAndBack);
+
+                        break;
+                    }
+                }
 
                 BindMaterial(material);
                 
@@ -364,7 +420,9 @@ namespace Erde.Graphics.Internal
                             {
                                 Vector3 translation = transform.Translation;
 
-                                if (!a_cameraFrutrum.CompareSphere(translation, renderer.Radius))
+                                float radius = renderer.Radius;
+
+                                if (radius != -1 && !a_cameraFrutrum.CompareSphere(translation, radius))
                                 {
                                     continue;
                                 }
@@ -394,13 +452,13 @@ namespace Erde.Graphics.Internal
             }
         }
 
-        void MergePass ()
+        void MergePass (MultiRenderTexture a_renderTexture)
         {
             int progHandle = ((OpenTKProgram)m_defferedShader.InternalObject).Handle;
             GL.UseProgram(progHandle);
 
             GL.ActiveTexture(TextureUnit.Texture0);
-            GL.BindTexture(TextureTarget.Texture2D, m_renderTarget.RenderTextures[0].Handle);
+            GL.BindTexture(TextureTarget.Texture2D, a_renderTexture.RenderTextures[0].Handle);
             GL.Uniform1(1, 0);
 
             // I do not need the vertex data however I apparently need data bound so just have an empty object
@@ -418,7 +476,7 @@ namespace Erde.Graphics.Internal
 #endif
         }
         
-        void LightingPass ()
+        void LightingPass (MultiRenderTexture a_renderTexture)
         {
             GL.Disable(EnableCap.DepthTest);
 
@@ -440,11 +498,11 @@ namespace Erde.Graphics.Internal
                     BindableContainer cont = BindMaterial(material);
 
                     GL.ActiveTexture(TextureUnit.Texture0 + cont.Textures);
-                    GL.BindTexture(TextureTarget.Texture2D, m_renderTarget.RenderTextures[1].Handle);
+                    GL.BindTexture(TextureTarget.Texture2D, a_renderTexture.RenderTextures[1].Handle);
                     GL.Uniform1(0, cont.Textures++);
                 
                     GL.ActiveTexture(TextureUnit.Texture0 + cont.Textures);
-                    GL.BindTexture(TextureTarget.Texture2D, m_renderTarget.RenderTextures[2].Handle);
+                    GL.BindTexture(TextureTarget.Texture2D, a_renderTexture.RenderTextures[2].Handle);
                     GL.Uniform1(1, cont.Textures++);
 
                     GL.ActiveTexture(TextureUnit.Texture0 + cont.Textures);
@@ -513,7 +571,7 @@ namespace Erde.Graphics.Internal
                                 SkyBoxPass();
                             }
 
-                            DeferredPass(camPos, camForward, frustrum, cam);
+                            DeferredPass(camPos, camForward, frustrum, cam, e_TransparencyMode.Opaque);
 
                             GL.Viewport(cam.Viewport);
 
@@ -530,11 +588,54 @@ namespace Erde.Graphics.Internal
 
                             GL.Clear(ClearBufferMask.DepthBufferBit);
 
-                            MergePass();
+                            MergePass(m_renderTarget);
 
-                            if (Light.LightList != null)
+                            LinkedList<Light> lightList = Light.LightList;
+
+                            if (lightList != null)
                             {
-                                LightingPass();
+                                LightingPass(m_renderTarget);
+                            }
+
+                            Texture depthBuffer = m_renderTarget.DepthBuffer;
+
+                            int transparentRenderTargetHandle = m_transparentRenderTarget.BufferHandle;
+                            int depthTextureHandle = depthBuffer.Handle;
+
+                            GL.DepthMask(false);
+
+                            GL.BindFramebuffer(FramebufferTarget.FramebufferExt, transparentRenderTargetHandle);
+                            GL.DrawBuffers(m_drawBuffers.Length, m_drawBuffers);
+
+                            // Bind other render texture depth buffer to transparent render texture
+                            GL.FramebufferTexture2D(FramebufferTarget.FramebufferExt, FramebufferAttachment.DepthAttachmentExt, TextureTarget.Texture2D, depthTextureHandle, 0);
+
+                            GL.ClearColor(Color.FromArgb(0, 0, 0, 0));
+                            GL.Clear(ClearBufferMask.ColorBufferBit);
+
+                            GL.Enable(EnableCap.Blend);
+                            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
+                            DeferredPass(camPos, camForward, frustrum, cam, e_TransparencyMode.Transparent);
+
+                            if (renderTexture != null)
+                            {
+                                GL.BindFramebuffer(FramebufferTarget.FramebufferExt, renderTexture.RenderBuffer);
+                            }
+                            else
+                            {
+                                GL.BindFramebuffer(FramebufferTarget.FramebufferExt, 0);
+                            }
+
+                            GL.DepthMask(true);
+
+                            GL.Disable(EnableCap.DepthTest);
+
+                            MergePass(m_transparentRenderTarget);
+
+                            if (lightList != null)
+                            {
+                                LightingPass(m_transparentRenderTarget);
                             }
 
                             m_gizmoRenderer.Update();
@@ -544,7 +645,7 @@ namespace Erde.Graphics.Internal
 
                             if (cam.PostProcessing != null)
                             {
-                                cam.PostProcessing.Effect(renderTexture, cam, m_renderTarget.RenderTextures[1], m_renderTarget.RenderTextures[2], m_renderTarget.DepthBuffer);
+                                cam.PostProcessing.Effect(renderTexture, cam, m_renderTarget.RenderTextures[1], m_renderTarget.RenderTextures[2], depthBuffer);
                             }   
                         }
                     }

@@ -9,8 +9,9 @@ namespace Erde.Graphics.Rendering
 {
     public enum e_TransparencyMode
     {
-        Opaque,
-        Transparent
+        Null = 0,
+        Opaque = 1,
+        Transparent = 2
     };
 
     public class Material : IRenderObject, IGraphicsObject

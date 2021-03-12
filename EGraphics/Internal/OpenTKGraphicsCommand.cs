@@ -149,15 +149,26 @@ namespace Erde.Graphics.Internal
 #endif
         }
 
-        public void Draw()
+        public void Draw(uint a_indices)
         {
             // A dummy vao to suppress error data is not needed
             GL.BindVertexArray(m_pipeline.StaticVAO);
 
-            GL.DrawArrays(PrimitiveType.TriangleStrip, 0, 4);
+            GL.DrawArrays(PrimitiveType.TriangleStrip, 0, (int)a_indices);
 
 #if DEBUG_INFO
             Pipeline.GLError("Graphics Command: Draw: ");
+#endif
+        }
+        public void DrawTriangles(uint a_indices)
+        {
+            // A dummy vao to suppress error data is not needed
+            GL.BindVertexArray(m_pipeline.StaticVAO);
+
+            GL.DrawArrays(PrimitiveType.Triangles, 0, (int)a_indices);
+
+#if DEBUG_INFO
+            Pipeline.GLError("Graphics Command: Draw Triangles: ");
 #endif
         }
 
@@ -166,7 +177,7 @@ namespace Erde.Graphics.Internal
             GL.DrawElements(PrimitiveType.Triangles, (int)a_indices, DrawElementsType.UnsignedShort, 0);
 
 #if DEBUG_INFO
-            Pipeline.GLError("Graphics Command: DrawElements: ");
+            Pipeline.GLError("Graphics Command: Draw Elements: ");
 #endif
         }
 
@@ -175,7 +186,7 @@ namespace Erde.Graphics.Internal
             GL.DrawElements(PrimitiveType.Triangles, (int)a_indices, DrawElementsType.UnsignedInt, 0);
 
 #if DEBUG_INFO
-            Pipeline.GLError("Graphics Command: DrawElementsUInt: ");
+            Pipeline.GLError("Graphics Command: Draw Elements UInt: ");
 #endif
         }
     }

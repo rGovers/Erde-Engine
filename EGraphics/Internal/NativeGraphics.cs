@@ -17,6 +17,13 @@ namespace Erde.Graphics.Internal
                 return null;
             }
         }
+        public MultiRenderTexture TransparentDefferedOutput
+        {
+            get
+            {
+                return null;
+            }
+        }
 
         internal IntPtr Handle
         {

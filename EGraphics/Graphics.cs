@@ -93,6 +93,13 @@ namespace Erde.Graphics
                 return m_internalGraphics.DefferedOutput;
             }
         }
+        public MultiRenderTexture TransparentDefferedOutput
+        {
+            get
+            {
+                return m_internalGraphics.TransparentDefferedOutput;
+            }
+        }
 
         internal UniformBufferObject LightBufferObject
         {

@@ -10,6 +10,10 @@ namespace Erde.Graphics
         {
             get;
         }
+        MultiRenderTexture TransparentDefferedOutput
+        {
+            get;
+        }
 
         void Init();
         void Update();

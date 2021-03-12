@@ -3,13 +3,36 @@ using Erde.Graphics.Variables;
 
 namespace Erde.Graphics.Rendering
 {
+    public enum e_MaterialDrawingMode
+    {
+        Triangles,
+        TriangleStrip
+    };
+
     public class MaterialRenderer : Renderer
     {
+        uint                  m_indices;
+        float                 m_radius;
+
+        e_MaterialDrawingMode m_drawingMode;
+
         public override uint Indices
         {
             get
             {
-                return 6;
+                return m_indices;
+            }
+        }
+
+        public e_MaterialDrawingMode DrawingMode
+        {
+            get
+            {
+                return m_drawingMode;
+            }
+            set
+            {
+                m_drawingMode = value;
             }
         }
 
@@ -17,23 +40,62 @@ namespace Erde.Graphics.Rendering
         {
             get
             {
-                return -1;
+                return m_radius;
             }
+        }
+        public void SetRadius(float a_radius)
+        {
+            m_radius = a_radius;
+        }
+
+        public void SetIndices(uint a_indices)
+        {
+            m_indices = a_indices;
         }
 
         public MaterialRenderer ()
             : base()
         {
+            m_indices = 4;
+            m_radius = -1;
         }
 
         public override void Draw (Camera a_camera)
         {
-            GraphicsCommand.Draw();
+            switch (m_drawingMode)
+            {
+                case e_MaterialDrawingMode.Triangles:
+                {
+                    GraphicsCommand.DrawTriangles(m_indices);
+
+                    break;
+                }
+                default:
+                {
+                    GraphicsCommand.Draw(m_indices);
+
+                    break;
+                }
+            }
         }
 
         public override void DrawShadow (Light a_light)
         {
-            
+            switch (m_drawingMode)
+            {
+                case e_MaterialDrawingMode.Triangles:
+                {
+                    GraphicsCommand.DrawTriangles(m_indices);
+
+                    break;
+                }
+                default:
+                {
+                    GraphicsCommand.Draw(m_indices);
+
+                    break;
+                }
+            }
         }
     }
 }

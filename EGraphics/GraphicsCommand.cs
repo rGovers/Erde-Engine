@@ -63,9 +63,13 @@ namespace Erde.Graphics
             InternalObject.UpdateTextureRGBA(a_texture, a_data);
         }
 
-        public static void Draw()
+        public static void Draw(uint a_indices = 4)
         {
-            InternalObject.Draw();
+            InternalObject.Draw(a_indices);
+        }
+        public static void DrawTriangles(uint a_indices = 6)
+        {
+            InternalObject.DrawTriangles(a_indices);
         }
         
         public static void DrawElements(uint a_indices)

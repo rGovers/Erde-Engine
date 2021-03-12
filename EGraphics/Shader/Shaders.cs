@@ -89,7 +89,9 @@ layout(location = 128) uniform mat4 BoneMatrices[127];
 
 void main()
 {
-    float s = 1 - max(sign(weights.x + weights.y + weights.z + weights.w), 0.0f);
+    const vec4 one = vec4(1);
+
+    float s = 1 - max(sign(dot(one, weights)), 0.0f);
 
     mat4 mat = mat4(s);
     mat += BoneMatrices[int(bones.x * 127)] * weights.x;
