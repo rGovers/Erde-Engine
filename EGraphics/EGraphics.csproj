@@ -81,6 +81,7 @@
     <Compile Include="Internal\Variables\NativeModel.cs" />
     <Compile Include="Internal\Variables\NativeUniformBufferObject.cs" />
     <Compile Include="Internal\Variables\OpenTKModel.cs" />
+    <Compile Include="Internal\Variables\OpenTKTexture.cs" />
     <Compile Include="Internal\Variables\OpenTKUniformBufferObject.cs" />
     <Compile Include="IO\ColladaLoader.cs" />
     <Compile Include="IO\OBJLoader.cs" />
@@ -108,6 +109,7 @@
     <Compile Include="Shader\VertexShader.cs" />
     <Compile Include="Variables\CubeMap.cs" />
     <Compile Include="Variables\IModel.cs" />
+    <Compile Include="Variables\ITexture.cs" />
     <Compile Include="Variables\IUniformBufferObject.cs" />
     <Compile Include="Variables\Model.cs" />
     <Compile Include="Variables\MultiRenderTexture.cs" />

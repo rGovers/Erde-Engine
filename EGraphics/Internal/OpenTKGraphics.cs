@@ -458,7 +458,7 @@ namespace Erde.Graphics.Internal
             GL.UseProgram(progHandle);
 
             GL.ActiveTexture(TextureUnit.Texture0);
-            GL.BindTexture(TextureTarget.Texture2D, a_renderTexture.RenderTextures[0].Handle);
+            GL.BindTexture(TextureTarget.Texture2D, ((OpenTKTexture)a_renderTexture.RenderTextures[0].InternalObject).Handle);
             GL.Uniform1(1, 0);
 
             // I do not need the vertex data however I apparently need data bound so just have an empty object
@@ -479,9 +479,10 @@ namespace Erde.Graphics.Internal
         void LightingPass (MultiRenderTexture a_renderTexture)
         {
             GL.Disable(EnableCap.DepthTest);
+            // GL.Disable(EnableCap.Blend);
 
             GL.Enable(EnableCap.Blend);
-            GL.BlendFunc(BlendingFactor.One, BlendingFactor.One);
+            // GL.BlendFunc(BlendingFactor.One, BlendingFactor.One);
 
             foreach (Light light in Light.LightList)
             {
@@ -498,16 +499,20 @@ namespace Erde.Graphics.Internal
                     BindableContainer cont = BindMaterial(material);
 
                     GL.ActiveTexture(TextureUnit.Texture0 + cont.Textures);
-                    GL.BindTexture(TextureTarget.Texture2D, a_renderTexture.RenderTextures[1].Handle);
+                    GL.BindTexture(TextureTarget.Texture2D, ((OpenTKTexture)a_renderTexture.RenderTextures[0].InternalObject).Handle);
                     GL.Uniform1(0, cont.Textures++);
-                
-                    GL.ActiveTexture(TextureUnit.Texture0 + cont.Textures);
-                    GL.BindTexture(TextureTarget.Texture2D, a_renderTexture.RenderTextures[2].Handle);
-                    GL.Uniform1(1, cont.Textures++);
 
                     GL.ActiveTexture(TextureUnit.Texture0 + cont.Textures);
-                    GL.BindTexture(TextureTarget.Texture2D, m_renderTarget.DepthBuffer.Handle);
+                    GL.BindTexture(TextureTarget.Texture2D, ((OpenTKTexture)a_renderTexture.RenderTextures[1].InternalObject).Handle);
+                    GL.Uniform1(1, cont.Textures++);
+                
+                    GL.ActiveTexture(TextureUnit.Texture0 + cont.Textures);
+                    GL.BindTexture(TextureTarget.Texture2D, ((OpenTKTexture)a_renderTexture.RenderTextures[2].InternalObject).Handle);
                     GL.Uniform1(2, cont.Textures++);
+
+                    GL.ActiveTexture(TextureUnit.Texture0 + cont.Textures);
+                    GL.BindTexture(TextureTarget.Texture2D, ((OpenTKTexture)m_renderTarget.DepthBuffer.InternalObject).Handle);
+                    GL.Uniform1(3, cont.Textures++);
 
                     ubo.UpdateBuffer();
 
@@ -600,7 +605,7 @@ namespace Erde.Graphics.Internal
                             Texture depthBuffer = m_renderTarget.DepthBuffer;
 
                             int transparentRenderTargetHandle = m_transparentRenderTarget.BufferHandle;
-                            int depthTextureHandle = depthBuffer.Handle;
+                            int depthTextureHandle = ((OpenTKTexture)depthBuffer.InternalObject).Handle;
 
                             GL.DepthMask(false);
 

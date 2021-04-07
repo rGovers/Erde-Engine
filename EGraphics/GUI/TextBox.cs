@@ -3,7 +3,6 @@ using Erde.Graphics.Shader;
 using Erde.Graphics.Variables;
 using Erde.IO;
 using OpenTK;
-using OpenTK.Graphics.OpenGL;
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -86,7 +85,7 @@ namespace Erde.Graphics.GUI
 
             m_updateString = true;
 
-            m_texture = new Texture(a_width, a_height, OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelInternalFormat.Rgba, m_pipeline);
+            m_texture = new Texture(a_width, a_height, e_PixelFormat.BGRA, e_InternalPixelFormat.RGBA, m_pipeline);
         }
 
         protected static void ExtractData (XmlNode a_node, out string a_text, out string a_fontFamily, out float a_fontSize, out int a_width, out int a_height, out Brush a_brush)
@@ -218,7 +217,6 @@ namespace Erde.Graphics.GUI
 
             ExtractData(a_node, out text, out fontFamily, out fontSize, out width, out height, out brush);
             Font font = CompileFontData(fontFamily, fontSize);
-            // Font font = new Font(FontFamily.GenericMonospace, fontSize);
 
             return new TextBox(brush, font, width, height, a_pipeline)
             {
@@ -228,9 +226,7 @@ namespace Erde.Graphics.GUI
 
         void UpdateString ()
         {
-            int handle = m_texture.Handle;
-
-            if (handle == -1)
+            if (!m_texture.Initialized)
             {
                 return;
             }
@@ -245,8 +241,6 @@ namespace Erde.Graphics.GUI
             System.Drawing.Graphics graphics = System.Drawing.Graphics.FromImage(bitmap);
             graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
             graphics.Clip = new Region(rect);
-
-            // Console.WriteLine("Font: " + m_font.Name);
 
             graphics.DrawString(m_text, m_font, m_brush, 0.0f, 0.0f);
             graphics.Flush();

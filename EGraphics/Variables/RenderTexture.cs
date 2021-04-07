@@ -1,4 +1,5 @@
 ﻿using Erde;
+using Erde.Graphics.Internal.Variables;
 using OpenTK.Graphics.OpenGL;
 using System;
 using System.Diagnostics;
@@ -24,36 +25,10 @@ namespace Erde.Graphics.Variables
             public void ModifyObject ()
             {
                 Texture colorBuffer = m_renderTexture.ColorBuffer;
-                GL.BindTexture(TextureTarget.Texture2D, colorBuffer.Handle);
-                GL.TexImage2D
-                (
-                    TextureTarget.Texture2D,
-                    0,
-                    PixelInternalFormat.Rgba,
-                    m_width, m_height,
-                    0,
-                    PixelFormat.Rgba,
-                    PixelType.UnsignedByte,
-                    IntPtr.Zero
-                );
-                colorBuffer.Width = m_width;
-                colorBuffer.Height = m_height;
+                colorBuffer.WriteData(m_width, m_height, e_PixelFormat.RGBA, e_InternalPixelFormat.RGBA, e_PixelType.UnsignedByte, IntPtr.Zero);
 
                 Texture depthBuffer = m_renderTexture.DepthBuffer;
-                GL.BindTexture(TextureTarget.Texture2D, depthBuffer.Handle);
-                GL.TexImage2D
-                (
-                    TextureTarget.Texture2D,
-                    0,
-                    PixelInternalFormat.DepthComponent,
-                    m_width, m_height,
-                    0,
-                    PixelFormat.DepthComponent,
-                    PixelType.UnsignedByte,
-                    IntPtr.Zero
-                );               
-                depthBuffer.Width = m_width;
-                depthBuffer.Height = m_height;
+                depthBuffer.WriteData(m_width, m_height, e_PixelFormat.Depth, e_InternalPixelFormat.Depth, e_PixelType.UnsignedByte, IntPtr.Zero);
             }
 
             public void DisposeObject ()
@@ -113,10 +88,10 @@ namespace Erde.Graphics.Variables
             }
         }
 
-        public RenderTexture (int a_width, int a_height, PixelFormat a_pixelFormat, PixelInternalFormat a_pixelInternalFormat, Pipeline a_pipeline)
+        public RenderTexture (int a_width, int a_height, e_PixelFormat a_pixelFormat, e_InternalPixelFormat a_pixelInternalFormat, Pipeline a_pipeline)
         {
             m_colorBuffer = new Texture(a_width, a_height, a_pixelFormat, a_pixelInternalFormat, a_pipeline);
-            m_depthBuffer = new Texture(a_width, a_height, PixelFormat.DepthComponent, PixelInternalFormat.DepthComponent, a_pipeline);
+            m_depthBuffer = new Texture(a_width, a_height, e_PixelFormat.Depth, e_InternalPixelFormat.Depth, a_pipeline);
 
             m_pipeline = a_pipeline;
 
@@ -138,7 +113,7 @@ namespace Erde.Graphics.Variables
                 FramebufferTarget.Framebuffer,
                 FramebufferAttachment.ColorAttachment0,
                 TextureTarget.Texture2D,
-                m_colorBuffer.Handle,
+                ((OpenTKTexture)m_colorBuffer.InternalObject).Handle,
                 0
             );
             GL.FramebufferTexture2D
@@ -146,7 +121,7 @@ namespace Erde.Graphics.Variables
                 FramebufferTarget.Framebuffer,
                 FramebufferAttachment.DepthAttachment,
                 TextureTarget.Texture2D,
-                m_depthBuffer.Handle,
+                ((OpenTKTexture)m_depthBuffer.InternalObject).Handle,
                 0
             );
         }

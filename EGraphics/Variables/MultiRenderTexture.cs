@@ -1,4 +1,5 @@
-﻿using OpenTK.Graphics.OpenGL;
+﻿using Erde.Graphics.Internal.Variables;
+using OpenTK.Graphics.OpenGL;
 using System;
 using System.Diagnostics;
 
@@ -25,19 +26,12 @@ namespace Erde.Graphics.Variables
             {
                 foreach (Texture texture in m_renderTexture.RenderTextures)
                 {
-                    GL.BindTexture(TextureTarget.Texture2D, texture.Handle);
-                    GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba8, m_width, m_height, 0, PixelFormat.Rgba, PixelType.Byte, IntPtr.Zero);
-
-                    texture.Width = m_width;
-                    texture.Height = m_height;
+                    texture.WriteData(m_width, m_height, e_PixelFormat.RGBA, e_InternalPixelFormat.RGBA, e_PixelType.UnsignedByte, IntPtr.Zero);
                 }
 
                 Texture depthBuffer = m_renderTexture.DepthBuffer;
-                
-                GL.BindTexture(TextureTarget.Texture2D, depthBuffer.Handle);
-                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent, m_width, m_height, 0, PixelFormat.DepthComponent, PixelType.Byte, IntPtr.Zero);
-                depthBuffer.Width = m_width;
-                depthBuffer.Height = m_height;
+
+                depthBuffer.WriteData(m_width, m_height, e_PixelFormat.Depth, e_InternalPixelFormat.Depth, e_PixelType.Byte, IntPtr.Zero);
             }
 
             public void DisposeObject ()
@@ -103,10 +97,10 @@ namespace Erde.Graphics.Variables
             m_renderTextures = new Texture[a_buffers];
             for (int i = 0; i < a_buffers; ++i)
             {
-                m_renderTextures[i] = new Texture(a_width, a_height, PixelFormat.Rgba, PixelInternalFormat.Rgba8, m_pipeline);
+                m_renderTextures[i] = new Texture(a_width, a_height, e_PixelFormat.RGBA, e_InternalPixelFormat.RGBA, m_pipeline);
             }
 
-            m_depthTexture = new Texture(a_width, a_height, PixelFormat.DepthComponent, PixelInternalFormat.DepthComponent, m_pipeline);
+            m_depthTexture = new Texture(a_width, a_height, e_PixelFormat.Depth, e_InternalPixelFormat.Depth, m_pipeline);
 
             m_pipeline.AddObject(this);
         }
@@ -150,10 +144,10 @@ namespace Erde.Graphics.Variables
             
             for (int i = 0; i < m_renderTextures.Length; ++i)
             {
-                GL.FramebufferTexture2D(FramebufferTarget.FramebufferExt, FramebufferAttachment.ColorAttachment0Ext + i, TextureTarget.Texture2D, m_renderTextures[i].Handle, 0);
+                GL.FramebufferTexture2D(FramebufferTarget.FramebufferExt, FramebufferAttachment.ColorAttachment0Ext + i, TextureTarget.Texture2D, ((OpenTKTexture)m_renderTextures[i].InternalObject).Handle, 0);
             }
 
-            GL.FramebufferTexture2D(FramebufferTarget.FramebufferExt, FramebufferAttachment.DepthAttachmentExt, TextureTarget.Texture2D, m_depthTexture.Handle, 0);
+            GL.FramebufferTexture2D(FramebufferTarget.FramebufferExt, FramebufferAttachment.DepthAttachmentExt, TextureTarget.Texture2D, ((OpenTKTexture)m_depthTexture.InternalObject).Handle, 0);
         }
 
         public void DisposeObject ()

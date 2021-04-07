@@ -111,7 +111,7 @@ layout(location = 0) out vec2 vUV;
 void main()
 {
     vec2 pos = vec2(gl_VertexID % 2, gl_VertexID / 2);
-    gl_Position = vec4(pos.x * 2 - 1, pos.y * 2 - 1, 0.0f, 1.0f);
+    gl_Position = vec4(pos.xy * 2 + -1, 0.0f, 1.0f);
     vUV = pos;
 }";
 
@@ -127,7 +127,7 @@ layout(location = 0) out vec2 vUV;
 void main()
 {
     vec2 tran = vec2(gl_VertexID % 2, gl_VertexID / 2);
-    vec4 pos = transform * vec4(tran.x * 2 - 1, tran.y * 2 - 1, 0, 1);
+    vec4 pos = transform * vec4(tran.xy * 2 + -1, 0, 1);
     gl_Position = vec4(pos.xyz, 1);
     vUV = tran;
 }";

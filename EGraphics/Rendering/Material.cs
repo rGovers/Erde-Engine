@@ -77,8 +77,6 @@ namespace Erde.Graphics.Rendering
             bind = new Binding(a_binding, a_object, m_shader);
 
             m_bindings.Add(bind);
-
-            // m_pipeline.AddObject(bind);
         }
 
         public Material (Program a_shader, e_TransparencyMode a_transparencyMode, Pipeline a_pipeline, Graphics a_graphics)

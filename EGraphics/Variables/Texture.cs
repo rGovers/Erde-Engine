@@ -1,16 +1,49 @@
-﻿using Erde.Graphics.Rendering;
+﻿using Erde.Application;
+using Erde.Graphics.Internal.Variables;
+using Erde.Graphics.Rendering;
 using Erde.IO;
-using OpenTK.Graphics.OpenGL;
 using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Erde.Graphics.Variables
 {
+    public enum e_PixelFormat : int
+    {
+        Alpha = 0,
+        Red,
+        Green,
+        Blue,
+        Depth,
+        RG,
+        RGB,
+        RGBA,
+        BGR,
+        BGRA
+    }
+
+    public enum e_InternalPixelFormat : int
+    {
+        Depth = 0,
+        Alpha,
+        RGB,
+        RGBA,
+    }
+
+    public enum e_PixelType : int
+    {
+        Byte = 0,
+        UnsignedByte,
+        Int,
+        UnsignedInt,
+        Float
+    }
+
     public class Texture : IGraphicsObject, IMaterialBindable
     {
-        internal class ColorGenerator : IGraphicsObject
+        class ColorGenerator : IGraphicsObject
         {
             Color   m_color;
             Texture m_texture;
@@ -23,9 +56,11 @@ namespace Erde.Graphics.Variables
 
             public void ModifyObject ()
             {
-                float[] colors = new float[16 * sizeof(float)];
+                int count = 16 * 4;
 
-                for (int i = 0; i < colors.Length; i += 4)
+                float[] colors = new float[count];
+
+                for (int i = 0; i < count; i += 4)
                 {
                     colors[i + 0] = m_color.R;
                     colors[i + 1] = m_color.G;
@@ -33,10 +68,11 @@ namespace Erde.Graphics.Variables
                     colors[i + 3] = m_color.A;
                 }
 
-                int handle = m_texture.Handle;
+                IntPtr data = Marshal.UnsafeAddrOfPinnedArrayElement(colors, 0);
 
-                GL.BindTexture(TextureTarget.Texture2D, handle);
-                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba, 4, 4, 0, OpenTK.Graphics.OpenGL.PixelFormat.Rgba, PixelType.Float, colors);
+                m_texture.WriteData(4, 4, e_PixelFormat.RGBA, e_InternalPixelFormat.RGBA, e_PixelType.Float, data);
+
+                m_texture.InternalObject.WriteData(data, e_PixelType.Float);
             }
 
             public void DisposeObject ()
@@ -48,7 +84,7 @@ namespace Erde.Graphics.Variables
             }
         }
 
-        internal class StreamGenerator : IGraphicsObject
+        class StreamGenerator : IGraphicsObject
         {
             Stream  m_stream;
             Texture m_texture;
@@ -72,29 +108,19 @@ namespace Erde.Graphics.Variables
             {
                 Bitmap bitmap = new Bitmap(m_stream);
 
-                BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+                int width = bitmap.Width;
+                int height = bitmap.Height;
 
-                GL.BindTexture(TextureTarget.Texture2D, m_texture.Handle);
-                GL.TexImage2D
-                (
-                    TextureTarget.Texture2D,
-                    0,
-                    m_texture.m_pixelInternalFormat,
-                    bitmap.Width, bitmap.Height,
-                    0,
-                    m_texture.m_pixelFormat,
-                    PixelType.UnsignedByte,
-                    data.Scan0
-                );
+                BitmapData data = bitmap.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+
+                m_texture.WriteData(width, height, m_texture.PixelFormat, m_texture.InternalPixelFormat, e_PixelType.UnsignedByte, data.Scan0);
 
                 bitmap.UnlockBits(data);
-
-                m_texture.Width = bitmap.Width;
-                m_texture.Height = bitmap.Height;
+                bitmap.Dispose();
             }
         }
 
-        internal class FileGenerator : IGraphicsObject
+        class FileGenerator : IGraphicsObject
         {
             IFileSystem m_fileSystem;
             string      m_filePath;
@@ -128,27 +154,12 @@ namespace Erde.Graphics.Variables
 
                     stream.Dispose();
 
-                    BitmapData data = map.LockBits(new Rectangle(0, 0, map.Width, map.Height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+                    int width = map.Width;
+                    int height = map.Height;
 
-                    m_texture.m_pixelInternalFormat = PixelInternalFormat.Rgba;
-                    m_texture.m_pixelFormat = OpenTK.Graphics.OpenGL.PixelFormat.Bgra;
+                    BitmapData data = map.LockBits(new Rectangle(0, 0, width, height), ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
 
-                    GL.BindTexture(TextureTarget.Texture2D, m_texture.m_texture);
-
-                    GL.TexImage2D
-                    (
-                        TextureTarget.Texture2D,
-                        0,
-                        PixelInternalFormat.Rgba,
-                        map.Width, map.Height,
-                        0,
-                        OpenTK.Graphics.OpenGL.PixelFormat.Bgra,
-                        PixelType.UnsignedByte,
-                        data.Scan0
-                    );
-
-                    m_texture.m_width = map.Width;
-                    m_texture.m_height = map.Height;
+                    m_texture.WriteData(width, height, e_PixelFormat.BGRA, e_InternalPixelFormat.RGBA, e_PixelType.UnsignedByte, data.Scan0);
 
                     map.UnlockBits(data);
                     map.Dispose();
@@ -156,21 +167,45 @@ namespace Erde.Graphics.Variables
             }
         }
 
-        int                                m_texture = -1;
+        ITexture              m_internalObject;
 
-        int                                m_width;
-        int                                m_height;
+        int                   m_width;
+        int                   m_height;
 
-        Pipeline                           m_pipeline;
+        Pipeline              m_pipeline;
 
-        OpenTK.Graphics.OpenGL.PixelFormat m_pixelFormat;
-        PixelInternalFormat                m_pixelInternalFormat;
+        e_PixelFormat         m_pixelFormat;
+        e_InternalPixelFormat m_pixelInternalFormat;
 
-        internal int Handle
+        public ITexture InternalObject
+        {
+            get 
+            {
+                return m_internalObject;
+            }
+        }
+
+        internal e_PixelFormat PixelFormat
         {
             get
             {
-                return m_texture;
+                return m_pixelFormat;
+            }
+            set
+            {
+                m_pixelFormat = value;
+            }
+        }
+
+        internal e_InternalPixelFormat InternalPixelFormat
+        {
+            get
+            {
+                return m_pixelInternalFormat;
+            }
+            set
+            {
+                m_pixelInternalFormat = value;
             }
         }
 
@@ -180,10 +215,6 @@ namespace Erde.Graphics.Variables
             {
                 return m_width;
             }
-            internal set
-            {
-                m_width = value;
-            }
         }
 
         public int Height
@@ -192,9 +223,13 @@ namespace Erde.Graphics.Variables
             {
                 return m_height;
             }
-            internal set
+        }
+
+        public bool Initialized
+        {
+            get
             {
-                m_height = value;
+                return m_internalObject.Initialized;
             }
         }
 
@@ -203,14 +238,19 @@ namespace Erde.Graphics.Variables
             m_width = 0;
             m_height = 0;
 
-            m_pixelFormat = OpenTK.Graphics.OpenGL.PixelFormat.Bgra;
-            m_pixelInternalFormat = PixelInternalFormat.Rgba;
+            m_pixelFormat = e_PixelFormat.BGRA;
+            m_pixelInternalFormat = e_InternalPixelFormat.RGBA;
 
             m_pipeline = a_pipeline;
 
+            if (a_pipeline.ApplicationType == e_ApplicationType.Managed)
+            {
+                m_internalObject = new OpenTKTexture(this);
+            }
+
             m_pipeline.AddObject(this);
         }
-        public Texture (int a_width, int a_height, OpenTK.Graphics.OpenGL.PixelFormat a_pixelFormat, PixelInternalFormat a_pixelInternalFormat, Pipeline a_pipeline)
+        public Texture (int a_width, int a_height, e_PixelFormat a_pixelFormat, e_InternalPixelFormat a_pixelInternalFormat, Pipeline a_pipeline)
         {
             m_width = a_width;
             m_height = a_height;
@@ -220,31 +260,17 @@ namespace Erde.Graphics.Variables
             m_pixelFormat = a_pixelFormat;
             m_pixelInternalFormat = a_pixelInternalFormat;
 
+            if (a_pipeline.ApplicationType == e_ApplicationType.Managed)
+            {
+                m_internalObject = new OpenTKTexture(this);
+            }
+
             m_pipeline.AddObject(this);
         }
 
         public void ModifyObject ()
         {
-            m_texture = GL.GenTexture();
-            GL.BindTexture(TextureTarget.Texture2D, m_texture);
-
-            GL.TexImage2D
-                (
-                    TextureTarget.Texture2D,
-                    0,
-                    m_pixelInternalFormat,
-                    m_width, m_height,
-                    0,
-                    m_pixelFormat,
-                    PixelType.UnsignedByte,
-                    IntPtr.Zero
-                );
-
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)All.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)All.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (int)All.ClampToEdge);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)All.ClampToEdge);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)All.ClampToEdge);
+            m_internalObject.ModifyObject();
         }
 
         void Dispose (bool a_state)
@@ -267,16 +293,25 @@ namespace Erde.Graphics.Variables
             GC.SuppressFinalize(this);
         }
 
+        internal void WriteData(int a_width, int a_height, e_PixelFormat a_pixelFormat, e_InternalPixelFormat a_internalPixelFormat, e_PixelType a_pixelType, IntPtr a_data)
+        {
+            m_width = a_width;
+            m_height = a_height;
+
+            m_pixelFormat = a_pixelFormat;
+            m_pixelInternalFormat = a_internalPixelFormat;
+
+            m_internalObject.WriteData(a_data, a_pixelType);
+        }
+
         public void Bind (BindableContainer a_container, Binding a_binding)
         {
-            GL.ActiveTexture(TextureUnit.Texture0 + a_container.Textures);
-            GL.BindTexture(TextureTarget.Texture2D, Handle);
-            GL.Uniform1(a_binding.Handle, a_container.Textures++);
+            m_internalObject.Bind(a_container.Textures++, a_binding.Handle);
         }
 
         public void DisposeObject ()
         {
-            GL.DeleteTexture(m_texture);
+            m_internalObject.DisposeObject();
         }
 
         public static Texture FromColor (Color a_color, Pipeline a_pipeline)

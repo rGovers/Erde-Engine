@@ -60,7 +60,7 @@ namespace Erde.Graphics
 
         public static void UpdateTextureRGBA(Texture a_texture, IntPtr a_data)
         {
-            InternalObject.UpdateTextureRGBA(a_texture, a_data);
+            a_texture.WriteData(a_texture.Width, a_texture.Height, e_PixelFormat.BGRA, e_InternalPixelFormat.RGBA, e_PixelType.UnsignedByte, a_data);
         }
 
         public static void Draw(uint a_indices = 4)

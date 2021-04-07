@@ -34,14 +34,14 @@ namespace Erde.Graphics.Internal.Lights
 
                 GL.ActiveTexture(TextureUnit.Texture0 + a_bindableContainer.Textures);
                 GL.BindTexture(TextureTarget.Texture2D, m_shadowMap);
-                GL.Uniform1(3, a_bindableContainer.Textures++);
+                GL.Uniform1(4, a_bindableContainer.Textures++);
 
                 Matrix4 view = m_light.View;
                 Matrix4 proj = m_light.Projection;
 
                 Matrix4 viewProj = view * proj;
 
-                GL.UniformMatrix4(4, false, ref viewProj);
+                GL.UniformMatrix4(5, false, ref viewProj);
             }
         }
         public void BindShadowDrawing ()

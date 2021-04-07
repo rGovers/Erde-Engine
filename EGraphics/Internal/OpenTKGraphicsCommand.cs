@@ -1,5 +1,6 @@
 using Erde.Graphics;
 using Erde.Graphics.Internal.Shader;
+using Erde.Graphics.Internal.Variables;
 using Erde.Graphics.Shader;
 using Erde.Graphics.Variables;
 using OpenTK;
@@ -98,7 +99,7 @@ namespace Erde.Graphics.Internal
         public void BindTexture(Program a_program, int a_binding, Texture a_texture, int a_index)
         {
             GL.ActiveTexture(TextureUnit.Texture0 + a_index);
-            GL.BindTexture(TextureTarget.Texture2D, a_texture.Handle);
+            GL.BindTexture(TextureTarget.Texture2D, ((OpenTKTexture)a_texture.InternalObject).Handle);
             GL.Uniform1(a_binding, a_index);
 
 #if DEBUG_INFO
@@ -128,24 +129,6 @@ namespace Erde.Graphics.Internal
 
 #if DEBUG_INFO
             Pipeline.GLError("Graphics Command: Bind Matrix4: ");
-#endif
-        }
-
-        public void UpdateTextureRGBA(Texture a_texture, IntPtr a_data)
-        {
-            GL.BindTexture(TextureTarget.Texture2D, a_texture.Handle);
-
-            GL.TexImage2D(TextureTarget.Texture2D,
-            0,
-            PixelInternalFormat.Rgba,
-            a_texture.Width, a_texture.Height,
-            0,
-            OpenTK.Graphics.OpenGL.PixelFormat.Bgra,
-            PixelType.UnsignedByte,
-            a_data);
-
-#if DEBUG_INFO
-            Pipeline.GLError("Graphics Command: Update Texture RGBA: ");
 #endif
         }
 

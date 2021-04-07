@@ -54,7 +54,7 @@ namespace Erde.Graphics.Internal.Variables
 
         public void DisposeObject ()
         {
-            if (m_vao == -1)
+            if (m_vao != -1)
             {
                 GL.DeleteBuffer(m_vbo);
                 GL.DeleteBuffer(m_ibo);
