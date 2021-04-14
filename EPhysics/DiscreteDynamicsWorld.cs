@@ -16,6 +16,9 @@ namespace Erde.Physics
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate void ErrorEvent(IntPtr a_str);
 
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate void CollisionCallback(IntPtr a_objA, IntPtr a_objB, float a_xA, float a_yA, float a_zA, float a_xB, float a_yB, float a_zB, float a_nX, float a_nY, float a_nZ);
+
         [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
         static extern IntPtr DiscreteDynamicsWorld_new (IntPtr a_dispatcher, IntPtr a_broadphase, IntPtr a_solver, IntPtr a_configuration);
         [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
@@ -43,6 +46,9 @@ namespace Erde.Physics
         static extern void DiscreteDynamicsWorld_raycastClosest (IntPtr a_ptr, float a_xF, float a_yF, float a_zF, float a_xT, float a_yT, float a_zT, out IntPtr a_object, out float a_xN, out float a_yN, out float a_zN, out float a_xP, out float a_yP, out float a_zP);
 
         [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
+        static extern void DiscreteDynamicsWorld_checkCollidingObjects(IntPtr a_ptr, CollisionCallback a_callback);
+
+        [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
         static extern void DiscreteDynamicsWorld_setDebugDrawer(IntPtr a_ptr, IntPtr a_drawer);
 
         [DllImport("ENativePhysics", CallingConvention = CallingConvention.Cdecl)]
@@ -58,6 +64,7 @@ namespace Erde.Physics
         // Variables to stop GC collecting objects
         DrawLineEvent                       m_drawLineEvent;
         ErrorEvent                          m_errorEvent;
+        CollisionCallback                   m_collisionEvent;
 
         Dictionary<IntPtr, CollisionObject> m_objectLookup;
 
@@ -90,6 +97,7 @@ namespace Erde.Physics
 
             m_drawLineEvent = DrawLine;
             m_errorEvent = Error;
+            m_collisionEvent = OnCollision;
 
             m_objectLookup = new Dictionary<IntPtr, CollisionObject>();
         }
@@ -106,6 +114,23 @@ namespace Erde.Physics
             {
                 InternalConsole.Error(str);
             }
+        }
+
+        void OnCollision(IntPtr a_objA, IntPtr a_objB, float a_xA, float a_yA, float a_zA, float a_xB, float a_yB, float a_zB, float a_nX, float a_nY, float a_nZ)
+        {
+            CollisionObject objA = m_objectLookup[a_objA];
+            CollisionObject objB = m_objectLookup[a_objB];
+
+            GameObject gameObjectA = objA.GameObject;
+            GameObject gameObjectB = objB.GameObject;
+
+            Vector3 posA = new Vector3(a_xA, a_yA, a_zA);
+            Vector3 posB = new Vector3(a_xB, a_yB, a_zB);
+
+            Vector3 normal = new Vector3(a_nX, a_nY, a_nZ);
+
+            gameObjectA.OnCollision(objB, normal, posA);
+            gameObjectB.OnCollision(objA, normal, posB);
         }
 
         internal void AddRigidbody (Rigidbody a_rigidbody)
@@ -167,6 +192,8 @@ namespace Erde.Physics
             {
                 DiscreteDynamicsWorld_debugDrawWorld(m_objectPtr);
             }
+
+            DiscreteDynamicsWorld_checkCollidingObjects(m_objectPtr, m_collisionEvent);
         }
 
         internal bool RaycastClosest (Vector3 a_from, Vector3 a_to, out RaycastResultClosest a_result)

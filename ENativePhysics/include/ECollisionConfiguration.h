@@ -31,6 +31,9 @@ private:
 	btCollisionAlgorithmCreateFunc* m_distanceFieldSphereCF;
 	btCollisionAlgorithmCreateFunc* m_sphereDistanceFieldCF;
 
+	btCollisionAlgorithmCreateFunc* m_distanceFieldConvexCF;
+	btCollisionAlgorithmCreateFunc* m_convexDistanceFieldCF;
+
 	btPoolAllocator*				m_persistentManifoldPool;
 	btPoolAllocator*				m_collisionAlgorithmPool;
 

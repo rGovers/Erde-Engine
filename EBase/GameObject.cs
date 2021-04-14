@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenTK;
+using System;
 using System.Collections.Generic;
 
 namespace Erde
@@ -7,14 +8,16 @@ namespace Erde
     {
         static List<GameObject> GameObjects = new List<GameObject>();
 
-        string                  m_name;
+        string                   m_name;
 
-        List<Component>         m_components;
+        List<Component>          m_components;
 
-        Transform               m_transform;
+        Transform                m_transform;
 
-        Behaviour.Event         m_update;
-        Behaviour.Event         m_physicsUpdate;
+        Behaviour.Event          m_update;
+        Behaviour.Event          m_physicsUpdate;
+
+        Behaviour.CollisionEvent m_collision;
 
         public string Name
         {
@@ -129,6 +132,17 @@ namespace Erde
             GC.SuppressFinalize(this);
         }
 
+        public void OnCollision(object a_other, Vector3 a_normal, Vector3 a_pos)
+        {
+            lock (this)
+            {
+                if (m_collision != null)
+                {
+                    m_collision(a_other, a_normal, a_pos);
+                }
+            }
+        }
+
         public Component AddComponent (Type a_type)
         {
             Component comp = Activator.CreateInstance(a_type) as Component;
@@ -171,6 +185,7 @@ namespace Erde
 
                     m_update += behaviour.Update;
                     m_physicsUpdate += behaviour.PhysicsUpdate;
+                    m_collision += behaviour.OnCollision;
                 }
             }
         }
@@ -213,6 +228,8 @@ namespace Erde
                     if (behaviour != null)
                     {
                         m_update -= behaviour.Update;
+                        m_physicsUpdate -= behaviour.PhysicsUpdate;
+                        m_collision -= behaviour.OnCollision;
                     }
                 }
             }
@@ -221,7 +238,18 @@ namespace Erde
         {
             lock (this)
             {
-                m_components.Remove(a_component);
+                lock (a_component)
+                {
+                    m_components.Remove(a_component);
+
+                    Behaviour behaviour = a_component as Behaviour;
+                    if (behaviour != null)
+                    {
+                        m_update -= behaviour.Update;
+                        m_physicsUpdate -= behaviour.PhysicsUpdate;
+                        m_collision -= behaviour.OnCollision;
+                    }
+                }
             }
         }
         public void RemoveComponent<T> () where T : Component
@@ -234,10 +262,19 @@ namespace Erde
 
                     if (comp != null)
                     {
-                        RemoveComponent(comp);
-
                         lock (comp)
                         {
+                            m_components.Remove(comp);
+
+                            Behaviour behaviour = comp as Behaviour;
+                            if (behaviour != null)
+                            {
+                                m_update -= behaviour.Update;
+                                m_physicsUpdate -= behaviour.PhysicsUpdate;
+                                m_collision -= behaviour.OnCollision;
+                            }
+
+                        
                             IDisposable disposable = comp as IDisposable;
                             if (disposable != null)
                             {

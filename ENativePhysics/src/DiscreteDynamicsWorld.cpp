@@ -5,7 +5,7 @@
 #include "ENativeDebugDrawer.h"
 #include "Export.h"
 
-#include <iostream>
+typedef void (*CollisionCallback)(const btCollisionObject* a_objA, const btCollisionObject* a_objB, float a_xA, float a_yA, float a_zA, float a_xB, float a_yB, float a_zB, float a_nX, float a_nY, float a_nZ);
 
 EExportFunc(btDiscreteDynamicsWorld*, DiscreteDynamicsWorld_new(btCollisionDispatcher* a_dispatcher, btBroadphaseInterface* a_broadphase, btConstraintSolver* a_solver, btCollisionConfiguration* a_configuration));
 EExportFunc(void, DiscreteDynamicsWorld_delete(btDiscreteDynamicsWorld* a_ptr)); 
@@ -22,6 +22,8 @@ EExportFunc(void, DiscreteDynamicsWorld_addCollisionObject(btDiscreteDynamicsWor
 EExportFunc(void, DiscreteDynamicsWorld_removeCollisionObject(btDiscreteDynamicsWorld* a_ptr, btCollisionObject* a_collisionObject));
 
 EExportFunc(void, DiscreteDynamicsWorld_raycastClosest(btDiscreteDynamicsWorld* a_ptr, float a_xF, float a_yF, float a_zF, float a_xT, float a_yT, float a_zT, const btCollisionObject*& a_object, float& a_xN, float& a_yN, float& a_zN, float& a_xP, float& a_yP, float& a_zP));
+
+EExportFunc(void, DiscreteDynamicsWorld_checkCollidingObjects(btDiscreteDynamicsWorld* a_ptr, CollisionCallback a_callback));
 
 EExportFunc(void, DiscreteDynamicsWorld_setDebugDrawer(btDiscreteDynamicsWorld* a_ptr, ENativeDebugDrawer* a_drawer));
 
@@ -59,6 +61,32 @@ void DiscreteDynamicsWorld_raycastClosest(btDiscreteDynamicsWorld* a_ptr, float 
 		a_xP = callback.m_hitPointWorld.x();
 		a_yP = callback.m_hitPointWorld.y();
 		a_zP = callback.m_hitPointWorld.z();
+	}
+}
+
+void DiscreteDynamicsWorld_checkCollidingObjects(btDiscreteDynamicsWorld* a_ptr, CollisionCallback a_callback)
+{
+	btDispatcher* dispatcher = a_ptr->getDispatcher();
+
+	const int numManifolds = dispatcher->getNumManifolds();
+
+	for (int i = 0; i < numManifolds; ++i)
+	{
+		btPersistentManifold* contactManifold = dispatcher->getManifoldByIndexInternal(i);
+
+		const btCollisionObject* objA = contactManifold->getBody0();
+		const btCollisionObject* objB = contactManifold->getBody1();
+
+		const int numContacts = contactManifold->getNumContacts();
+		for (int j = 0; j < numContacts; ++j)
+		{
+			btManifoldPoint& pt = contactManifold->getContactPoint(j);
+			const btVector3& ptA = pt.getPositionWorldOnA();
+			const btVector3& ptB = pt.getPositionWorldOnB();
+			const btVector3 normalB = pt.m_normalWorldOnB;
+
+			a_callback(objA, objB, ptA.x(), ptA.y(), ptA.z(), ptB.x(), ptB.y(), ptB.z(), normalB.x(), normalB.y(), normalB.z());
+		}
 	}
 }
 

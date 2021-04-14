@@ -13,6 +13,7 @@
 #include "BulletCollision/CollisionDispatch/btSphereTriangleCollisionAlgorithm.h"
 #include "BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h"
 #include "BulletCollision/NarrowPhaseCollision/btVoronoiSimplexSolver.h"
+#include "EDistanceFieldConvexAlgorithm.h"
 #include "EDistanceFieldSphereAlgorithm.h"
 #include "LinearMath/btPoolAllocator.h"
 
@@ -66,6 +67,12 @@ ECollisionConfiguration::ECollisionConfiguration()
 	m_sphereDistanceFieldCF = new (mem) EDistanceFieldSphereAlgorithm::CreateFunc;
 	m_sphereDistanceFieldCF->m_swapped = true;
 
+	mem = btAlignedAlloc(sizeof(EDistanceFieldConvexAlgorithm::CreateFunc), 16);
+	m_distanceFieldConvexCF = new (mem) EDistanceFieldConvexAlgorithm::CreateFunc;
+	mem = btAlignedAlloc(sizeof(EDistanceFieldConvexAlgorithm::CreateFunc), 16);
+	m_convexDistanceFieldCF = new (mem) EDistanceFieldConvexAlgorithm::CreateFunc;
+	m_convexDistanceFieldCF->m_swapped = true;
+ 
 	int maxSize = sizeof(btConvexConvexAlgorithm);
 	int maxSize2 = sizeof(btConvexConcaveCollisionAlgorithm);
 	int maxSize3 = sizeof(btCompoundCollisionAlgorithm);
@@ -123,6 +130,16 @@ ECollisionConfiguration::~ECollisionConfiguration()
 	m_planeConvexCF->~btCollisionAlgorithmCreateFunc();
 	btAlignedFree(m_planeConvexCF);
 
+	m_distanceFieldSphereCF->~btCollisionAlgorithmCreateFunc();
+	btAlignedFree(m_distanceFieldSphereCF);
+	m_sphereDistanceFieldCF->~btCollisionAlgorithmCreateFunc();
+	btAlignedFree(m_sphereDistanceFieldCF);
+
+	m_distanceFieldConvexCF->~btCollisionAlgorithmCreateFunc();
+	btAlignedFree(m_distanceFieldConvexCF);
+	m_convexDistanceFieldCF->~btCollisionAlgorithmCreateFunc();
+	btAlignedFree(m_convexDistanceFieldCF);
+
 	m_pdSolver->~btConvexPenetrationDepthSolver();
 	btAlignedFree(m_pdSolver);
 }
@@ -145,6 +162,16 @@ btCollisionAlgorithmCreateFunc* ECollisionConfiguration::getCollisionAlgorithmCr
 	if ((a_proxyType0 == CUSTOM_CONVEX_SHAPE_TYPE) && (a_proxyType1 == SPHERE_SHAPE_PROXYTYPE))
 	{
 		return m_distanceFieldSphereCF;
+	}
+
+	if (btBroadphaseProxy::isConvex(a_proxyType0) && (a_proxyType1 == CUSTOM_CONVEX_SHAPE_TYPE))
+	{
+		return m_convexDistanceFieldCF;
+	}
+
+	if ((a_proxyType0 == CUSTOM_CONVEX_SHAPE_TYPE) && btBroadphaseProxy::isConvex(a_proxyType1))
+	{
+		return m_distanceFieldConvexCF;
 	}
 
 	if ((a_proxyType0 == SPHERE_SHAPE_PROXYTYPE) && (a_proxyType1 == SPHERE_SHAPE_PROXYTYPE))
