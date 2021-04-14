@@ -13,5 +13,11 @@ namespace Erde.Graphics
         {
             get;
         }
+
+        bool ConsoleVisible
+        {
+            get;
+            set;
+        }
     }
 }

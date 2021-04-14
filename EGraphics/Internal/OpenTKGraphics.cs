@@ -402,10 +402,17 @@ namespace Erde.Graphics.Internal
                     }
                 }
 
-                BindMaterial(material);
+                BindableContainer cont = BindMaterial(material);
                 
                 BindCamera();
                 BindTime();
+
+                if ((a_transparencyMode & e_TransparencyMode.Transparent) != 0)
+                {
+                    GL.ActiveTexture(TextureUnit.Texture0 + cont.Textures);
+                    GL.BindTexture(TextureTarget.Texture2D, ((OpenTKTexture)m_renderTarget.DepthBuffer.InternalObject).Handle);
+                    GL.Uniform1(19, cont.Textures++);
+                }
 
                 foreach (DrawingContainer.RenderingContainer rend in draw.Renderers)
                 {

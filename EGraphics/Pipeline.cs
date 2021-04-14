@@ -84,6 +84,17 @@ namespace Erde.Graphics
                 m_displayConsole = value;
             }
         }
+        public bool ConsoleVisible
+        {
+            get
+            {
+                return m_internalPipeline.ConsoleVisible;
+            }
+            set
+            {
+                m_internalPipeline.ConsoleVisible = value;
+            }
+        }
 
         public Application.Application Application
         {
@@ -95,7 +106,9 @@ namespace Erde.Graphics
 
         public Pipeline (Application.Application a_application) 
         {
+#if DEBUG_INFO
             Debug.Assert(Instance == null);
+#endif
             Instance = this;
 
             m_application = a_application;

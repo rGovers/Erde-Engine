@@ -14,6 +14,18 @@ namespace Erde.Graphics
 
         List<TextBox> m_textBoxes;
 
+        public bool DisplayConsole
+        {
+            get 
+            {
+                return m_canvas.Visible;
+            }
+            set
+            {
+                m_canvas.Visible = value;
+            }
+        }
+
         internal ConsoleDisplay (Pipeline a_pipeline)
         {
             m_canvas = new Canvas(new Vector2(1280, 720), a_pipeline);
@@ -45,7 +57,7 @@ namespace Erde.Graphics
                     {
                         textBox.XLockMode = e_XLockMode.Right;
                         textBox.YLockMode = e_YLockMode.Top;
-                        textBox.Position = new Vector2(320, (displayedElements++ + 1) * 32);
+                        textBox.Position = new Vector2(320, (++displayedElements) * 32);
                     }
                 }
                 else
@@ -94,7 +106,9 @@ namespace Erde.Graphics
 
         void Dispose (bool a_state)
         {
-            Debug.Assert(a_state, string.Format("[Warning] Resource leaked {0}", GetType().ToString()));
+#if DEBUG_INFO
+            Tools.VerifyObjectMemoryState(this, a_state);
+#endif
 
             m_canvas.Dispose();
         }

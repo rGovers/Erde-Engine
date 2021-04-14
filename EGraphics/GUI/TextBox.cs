@@ -15,8 +15,6 @@ namespace Erde.Graphics.GUI
     public class TextBox : Element, IDisposable
     {
         bool                    m_updateString;
-        
-        Pipeline                m_pipeline;
 
         Texture                 m_texture;
 
@@ -81,11 +79,9 @@ namespace Erde.Graphics.GUI
             m_brush = a_brush;
             m_font = a_font;
 
-            m_pipeline = a_pipeline;
-
             m_updateString = true;
 
-            m_texture = new Texture(a_width, a_height, e_PixelFormat.BGRA, e_InternalPixelFormat.RGBA, m_pipeline);
+            m_texture = new Texture(a_width, a_height, e_PixelFormat.BGRA, e_InternalPixelFormat.RGBA, a_pipeline);
         }
 
         protected static void ExtractData (XmlNode a_node, out string a_text, out string a_fontFamily, out float a_fontSize, out int a_width, out int a_height, out Brush a_brush)
@@ -263,24 +259,29 @@ namespace Erde.Graphics.GUI
         {
             UpdateString();
         }
-        internal override void Draw (Vector2 a_resolution)
+        internal override Vector2 Draw (Vector2 a_resolution, Vector2 a_trueResolution)
         {
             if (m_updateString)
             {
                 UpdateString();
             }
 
-            CalculateTrueTransform();
-            Matrix4 transform = ToMatrix(a_resolution);
+            if (m_texture.Initialized)
+            {
+                CalculateTrueTransform();
+                Matrix4 transform = ToMatrix(a_resolution, a_trueResolution);
 
-            Program program = Shaders.TRANSFORM_IMAGE_SHADER_INVERTED;
+                Program program = Shaders.TRANSFORM_IMAGE_SHADER_INVERTED;
 
-            GraphicsCommand.BindProgram(program);
+                GraphicsCommand.BindProgram(program);
 
-            GraphicsCommand.BindMatrix4(program, 0, transform);
-            GraphicsCommand.BindTexture(program, 1, m_texture, 0);
+                GraphicsCommand.BindMatrix4(program, 0, transform);
+                GraphicsCommand.BindTexture(program, 1, m_texture, 0);
 
-            GraphicsCommand.Draw();
+                GraphicsCommand.Draw();
+            }
+
+            return a_resolution;
         }
 
         void Dispose (bool a_state)

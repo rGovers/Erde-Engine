@@ -25,7 +25,9 @@ namespace Erde.Application
 
         internal Input (Application a_application)
         {
+#if DEBUG_INFO
             Debug.Assert(Instance == null);
+#endif
 
             Instance = this;
 
@@ -139,6 +141,21 @@ namespace Erde.Application
             }
 
             return Instance.m_mouseState.IsButtonUp(a_button);
+        }
+
+        public static Vector2 GetMouseMovement()
+        {
+            return new Vector2(Instance.m_prevMouseState.X - Instance.m_mouseState.X, Instance.m_prevMouseState.Y - Instance.m_mouseState.Y);
+        }
+
+        public static Vector2 GetMousePosition()
+        {
+            return new Vector2(Instance.m_mouseState.X, Instance.m_mouseState.Y);
+        }
+
+        public static float GetWheelPosition()
+        {
+            return Instance.m_mouseState.WheelPrecise;
         }
 
         public static Vector2 GetCursorPosition ()

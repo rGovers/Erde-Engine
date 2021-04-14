@@ -30,50 +30,53 @@ namespace Erde.Graphics.Internal
 
         public void BindProgram(Program a_program)
         {
-            if (a_program.DepthTest)
+            if (a_program != null)
             {
-                GL.Enable(EnableCap.DepthTest);
+                if (a_program.DepthTest)
+                {
+                    GL.Enable(EnableCap.DepthTest);
+                }
+                else
+                {
+                    GL.Disable(EnableCap.DepthTest);
+                }
+
+                switch (a_program.CullingMode)
+                {
+                    case e_CullingMode.None:
+                    {
+                        GL.Disable(EnableCap.CullFace);
+
+                        break;
+                    }
+                    case e_CullingMode.Front:
+                    {
+                        GL.Enable(EnableCap.CullFace);
+                        GL.CullFace(CullFaceMode.Front);
+
+                        break;
+                    }
+                    case e_CullingMode.Back:
+                    {
+                        GL.Enable(EnableCap.CullFace);
+                        GL.CullFace(CullFaceMode.Back);
+
+                        break;
+                    }
+                    case e_CullingMode.FrontAndBack:
+                    {
+                        GL.Enable(EnableCap.CullFace);
+                        GL.CullFace(CullFaceMode.FrontAndBack);
+
+                        break;
+                    }
+                }
+
+                OpenTKProgram program = (OpenTKProgram)a_program.InternalObject;
+                int handle = program.Handle;
+
+                GL.UseProgram(handle);
             }
-            else
-            {
-                GL.Disable(EnableCap.DepthTest);
-            }
-
-            switch (a_program.CullingMode)
-            {
-                case e_CullingMode.None:
-                {
-                    GL.Disable(EnableCap.CullFace);
-
-                    break;
-                }
-                case e_CullingMode.Front:
-                {
-                    GL.Enable(EnableCap.CullFace);
-                    GL.CullFace(CullFaceMode.Front);
-
-                    break;
-                }
-                case e_CullingMode.Back:
-                {
-                    GL.Enable(EnableCap.CullFace);
-                    GL.CullFace(CullFaceMode.Back);
-
-                    break;
-                }
-                case e_CullingMode.FrontAndBack:
-                {
-                    GL.Enable(EnableCap.CullFace);
-                    GL.CullFace(CullFaceMode.FrontAndBack);
-
-                    break;
-                }
-            }
-
-            OpenTKProgram program = (OpenTKProgram)a_program.InternalObject;
-            int handle = program.Handle;
-
-            GL.UseProgram(handle);
 
 #if DEBUG_INFO
             Pipeline.GLError("Graphics Command: Bind Program: ");
@@ -104,6 +107,40 @@ namespace Erde.Graphics.Internal
 
 #if DEBUG_INFO
             Pipeline.GLError("Graphics Command: Bind Texture: ");
+#endif
+        }
+
+        public void BindFloat(Program a_program, int a_binding, float a_value)
+        {
+            GL.Uniform1(a_binding, a_value);
+
+#if DEBUG_INFO
+            Pipeline.GLError("Graphics Command: Bind Float: ");
+#endif
+        }
+
+        public void BindVector2(Program a_program, int a_binding, Vector2 a_value)
+        {
+            GL.Uniform2(a_binding, a_value);
+
+#if DEBUG_INFO
+            Pipeline.GLError("Graphics Command: Bind Vector2: ");
+#endif
+        }
+        public void BindVector3(Program a_program, int a_binding, Vector3 a_value)
+        {
+            GL.Uniform3(a_binding, a_value);
+
+#if DEBUG_INFO
+            Pipeline.GLError("Graphics Command: Bind Vector3: ");
+#endif
+        }
+        public void BindVector4(Program a_program, int a_binding, Vector4 a_value)
+        {
+            GL.Uniform4(a_binding, a_value);
+
+#if DEBUG_INFO
+            Pipeline.GLError("Graphics Command: Bind Vector4: ");
 #endif
         }
 

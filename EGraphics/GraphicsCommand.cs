@@ -49,6 +49,24 @@ namespace Erde.Graphics
             InternalObject.BindTexture(a_program, a_binding, a_texture, a_index);
         }
         
+        public static void BindFloat(Program a_program, int a_binding, float a_value)
+        {
+            InternalObject.BindFloat(a_program, a_binding, a_value);
+        }
+
+        public static void BindVector2(Program a_program, int a_binding, Vector2 a_value)
+        {
+            InternalObject.BindVector2(a_program, a_binding, a_value);
+        }
+        public static void BindVector3(Program a_program, int a_binding, Vector3 a_value)
+        {
+            InternalObject.BindVector3(a_program, a_binding, a_value);
+        }
+        public static void BindVector4(Program a_program, int a_binding, Vector4 a_value)
+        {
+            InternalObject.BindVector4(a_program, a_binding, a_value);
+        }
+
         public static void BindMatrix4(Program a_program, int a_binding, Matrix4 a_matrix)
         {
             InternalObject.BindMatrix4(a_program, a_binding, a_matrix);

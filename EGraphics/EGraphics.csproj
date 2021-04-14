@@ -59,6 +59,7 @@
     <Compile Include="GUI\Canvas.cs" />
     <Compile Include="GUI\Element.cs" />
     <Compile Include="GUI\Image.cs" />
+    <Compile Include="GUI\ScrollView.cs" />
     <Compile Include="GUI\TextBox.cs" />
     <Compile Include="GUI\TextField.cs" />
     <Compile Include="IGraphics.cs" />

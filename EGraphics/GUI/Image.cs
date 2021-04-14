@@ -48,12 +48,12 @@ namespace Erde.Graphics.GUI
             return image;
         }
 
-        internal override void Draw (Vector2 a_resolution)
+        internal override Vector2 Draw (Vector2 a_resolution, Vector2 a_trueResolution)
         {
-            if (m_texture != null)
+            if (m_texture != null && m_texture.Initialized)
             {
                 CalculateTrueTransform();
-                Matrix4 transform = ToMatrix(a_resolution);
+                Matrix4 transform = ToMatrix(a_resolution, a_trueResolution);
 
                 Program program = Shaders.TRANSFORM_IMAGE_SHADER_INVERTED;
 
@@ -64,6 +64,8 @@ namespace Erde.Graphics.GUI
 
                 GraphicsCommand.Draw();
             }
+
+            return a_resolution;
         }
 
         void Dispose (bool a_state)

@@ -132,17 +132,42 @@ void main()
     vUV = tran;
 }";
 
+public const string QUAD_TRANSFORM_UV_VERTEX = @"
+#version 450
+
+#extension GL_ARB_separate_shader_objects : enable
+
+layout(location = 0) uniform mat4 transform;
+layout(location = 2) uniform vec4 uvT;
+
+layout(location = 0) out vec2 vUV;
+
+void main()
+{
+    vec2 tran = vec2(gl_VertexID % 2, gl_VertexID / 2);
+    vec4 pos = transform * vec4(tran.xy * 2 + -1, 0, 1);
+    gl_Position = vec4(pos.xyz, 1);
+    vUV = (tran * uvT.zw) + uvT.xy;
+}";
+
         public static Program TRANSFORM_IMAGE_SHADER;
         public static Program TRANSFORM_IMAGE_SHADER_INVERTED;
+
+        public static Program TRANSFORM_UV_IMAGE_SHADER;
+        public static Program TRANSFORM_UV_IMAGE_SHADER_INVERTED;
 
         public static void InitShaders (Pipeline a_pipeline)
         {
             PixelShader pixelShader = new PixelShader(DEFFERED_PIXEL, a_pipeline);
             PixelShader pixelShaderInverted = new PixelShader(DEFFERED_PIXEL_INVERTED, a_pipeline);
             VertexShader vertexShader = new VertexShader(QUAD_TRANSFORM_VERTEX, a_pipeline);
+            VertexShader vertexShaderUV = new VertexShader(QUAD_TRANSFORM_UV_VERTEX, a_pipeline);
 
             TRANSFORM_IMAGE_SHADER = new Program(pixelShader, vertexShader, null, 0, false, e_CullingMode.Back, a_pipeline);
             TRANSFORM_IMAGE_SHADER_INVERTED = new Program(pixelShaderInverted, vertexShader, null, 0, false, e_CullingMode.Back, a_pipeline);
+
+            TRANSFORM_UV_IMAGE_SHADER = new Program(pixelShader, vertexShaderUV, null, 0, false, e_CullingMode.Back, a_pipeline);
+            TRANSFORM_UV_IMAGE_SHADER_INVERTED = new Program(pixelShaderInverted, vertexShaderUV, null, 0, false, e_CullingMode.Back, a_pipeline);
 
 #if DEBUG_INFO
             Pipeline.GLError("Init Shaders: ");
@@ -151,6 +176,7 @@ void main()
             pixelShader.Dispose();
             pixelShaderInverted.Dispose();
             vertexShader.Dispose();
+            vertexShaderUV.Dispose();
         }
 
         public static void DestroyShaders ()
@@ -159,6 +185,11 @@ void main()
             TRANSFORM_IMAGE_SHADER = null;
             TRANSFORM_IMAGE_SHADER_INVERTED.Dispose();
             TRANSFORM_IMAGE_SHADER_INVERTED = null;
+
+            TRANSFORM_UV_IMAGE_SHADER.Dispose();
+            TRANSFORM_UV_IMAGE_SHADER = null;
+            TRANSFORM_UV_IMAGE_SHADER_INVERTED.Dispose();
+            TRANSFORM_UV_IMAGE_SHADER_INVERTED = null;
         }
     }
 }

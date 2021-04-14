@@ -6,6 +6,7 @@ using OpenTK.Input;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Reflection;
 using System.Xml;
@@ -421,15 +422,117 @@ namespace Erde.Graphics.GUI
             return null;
         }
 
-        void DrawElement (Element a_element, Vector2 a_size)
+        void DrawElement (Element a_element, Vector2 a_size, Vector2 a_trueSize)
         {
             if (a_element.Visible)
             {
-                a_element.Draw(a_size);
+                Vector2 newSize = a_element.Draw(a_size, a_trueSize);
 
                 foreach (Element child in a_element.Children)
                 {
-                    DrawElement(child, a_size);
+                    DrawElement(child, newSize, a_trueSize);
+                }
+
+                a_element.PostDraw(a_size, a_trueSize);
+            }
+        }
+
+        void UpdateElement(Element a_element, Vector2 a_resolution, MouseState a_mouseState, Vector2 a_cursorPos, Rectangle a_activeRegion)
+        {
+            if (a_element.Visible)
+            {
+                Vector2 truePos = a_element.TruePosition;
+
+                Vector2 pos = (truePos + a_resolution) * 0.5f;
+                Vector2 size = a_element.TrueSize;
+                Vector2 halfSize = size * 0.5f;
+
+                if (pos == Vector2.Zero && size == Vector2.Zero)
+                {
+                    return;
+                }
+
+                Vector2 regionPos = new Vector2(a_activeRegion.X, a_activeRegion.Y);
+                Vector2 regionSize = new Vector2(a_activeRegion.Width, a_activeRegion.Height);
+                Vector2 regionHalfSize = regionSize * 0.5f;
+
+                pos.X += regionPos.X;
+
+                Vector2 regionDiff = a_cursorPos - (regionPos + regionHalfSize);
+
+                if (Math.Abs(regionDiff.X) > regionHalfSize.X || Math.Abs(regionDiff.Y) > regionHalfSize.Y) 
+                {
+                    a_element.State = Element.e_State.Normal;
+                    if (a_element.Normal != null)
+                    {
+                        a_element.Normal(this, a_element);
+                    }
+
+                    return;
+                }
+
+                Vector2 cursorDiff = pos - a_cursorPos;
+
+                if (Math.Abs(cursorDiff.X) < halfSize.X && Math.Abs(cursorDiff.Y) < halfSize.Y)
+                {
+                    if (a_mouseState.IsButtonDown(MouseButton.Left) && m_prevMouseState.IsButtonUp(MouseButton.Left))
+                    {
+                        Input.BlockButton(MouseButton.Left);
+
+                        a_element.State = Element.e_State.Click;
+                        if (a_element.Click != null)
+                        {
+                            a_element.Click(this, a_element);
+                        }
+                    }
+                    else if (a_mouseState.IsButtonUp(MouseButton.Left) && m_prevMouseState.IsButtonDown(MouseButton.Left))
+                    {
+                        Input.BlockButton(MouseButton.Left);
+
+                        a_element.State = Element.e_State.Release;
+                        if (a_element.Release != null)
+                        {
+                            a_element.Release(this, a_element);
+                        }
+
+                        if (!string.IsNullOrEmpty(a_element.SubMenuDirectory))
+                        {
+                            Stream stream;
+
+                            if (m_fileSystem != null && m_fileSystem.Load(a_element.SubMenuDirectory, out stream))
+                            {
+                                XmlDocument xmlDocument = new XmlDocument();
+                                xmlDocument.Load(stream);
+
+                                stream.Dispose();
+
+                                m_childCanvas = LoadCanvasInternal(xmlDocument, m_fileSystem, m_pipeline);
+                                m_childCanvas.m_parentCanvas = this;
+                                m_childCanvas.m_paintedCanvas = false;
+                            }
+                        }
+                    }
+                    else if (a_element.State == Element.e_State.Release || a_element.State == Element.e_State.Normal)
+                    {
+                        a_element.State = Element.e_State.Hover;
+                        if (a_element.Hover != null)
+                        {
+                            a_element.Hover.Invoke(this, a_element);
+                        }
+                    }
+                }
+                else if (a_element.State != Element.e_State.Normal)
+                {
+                    a_element.State = Element.e_State.Normal;
+                    if (a_element.Normal != null)
+                    {
+                        a_element.Normal(this, a_element);
+                    }
+                }
+
+                foreach (Element child in a_element.Children)
+                {
+                    UpdateElement(child, a_resolution, a_mouseState, a_cursorPos, a_element.GetActiveRect(a_resolution));
                 }
             }
         }
@@ -445,76 +548,9 @@ namespace Erde.Graphics.GUI
                 MouseState currMouseState = Mouse.GetState(); 
                 Vector2 cursorPos = Input.GetCursorPosition();
 
-                foreach (Element element in m_elements)
+                foreach (Element child in m_rootElement.Children)
                 {
-                    if (element != m_rootElement && element.Visible)
-                    {
-                        Vector2 pos = (element.TruePosition + a_resolution) / 2;
-                        Vector2 size = element.TrueSize;
-
-                        Vector2 halfSize = size / 2;
-
-                        if (pos != Vector2.Zero && size != Vector2.Zero)
-                        {
-                            if (cursorPos.X > pos.X - halfSize.X && cursorPos.Y > pos.Y - halfSize.Y && cursorPos.X < pos.X + halfSize.X && cursorPos.Y < pos.Y + halfSize.Y)
-                            {
-                                const MouseButton left = MouseButton.Left;
-
-                                if (currMouseState.IsButtonDown(left) && m_prevMouseState.IsButtonUp(left))
-                                {
-                                    Input.BlockButton(left);
-
-                                    element.State = Element.e_State.Click;
-                                    if (element.Click != null)
-                                    {
-                                        element.Click(this, element);
-                                    }
-                                }
-                                else if (currMouseState.IsButtonUp(left) && m_prevMouseState.IsButtonDown(left))
-                                {
-                                    Input.BlockButton(left);
-
-                                    element.State = Element.e_State.Release;
-                                    if (element.Release != null)
-                                    {
-                                        element.Release(this, element);
-                                    }
-                                    if (!string.IsNullOrEmpty(element.SubMenuDirectory))
-                                    {
-                                        Stream stream;
-
-                                        if (m_fileSystem != null && m_fileSystem.Load(element.SubMenuDirectory, out stream))
-                                        {
-                                            XmlDocument xmlDocument = new XmlDocument();
-                                            xmlDocument.Load(stream);
-
-                                            stream.Dispose();
-
-                                            m_childCanvas = LoadCanvasInternal(xmlDocument, m_fileSystem, m_pipeline);
-                                            m_childCanvas.m_parentCanvas = this;
-                                            m_childCanvas.m_paintedCanvas = false;
-                                        }
-                                    }
-                                }
-                                else if (element.State == Element.e_State.Release || element.State == Element.e_State.Normal)
-                                {
-                                    element.State = Element.e_State.Hover;
-                                    if (element.Hover != null)
-                                    {
-                                        element.Hover.Invoke(this, element);
-                                    }
-                                }
-                            }
-                            else if (element.State != Element.e_State.Normal)
-                            {
-                                element.State = Element.e_State.Normal;
-                                if (element.Normal != null)
-                                {
-                                    element.Normal(this, element);
-                                }
-                            }
-                        }
-                    }
+                    UpdateElement(child, a_resolution, currMouseState, cursorPos, m_rootElement.GetActiveRect(a_resolution));
                 }
 
                 m_prevMouseState = currMouseState;
@@ -536,7 +572,6 @@ namespace Erde.Graphics.GUI
 
             if (m_childCanvas == null)
             {
-                GL.Disable(EnableCap.DepthTest);
                 GL.Enable(EnableCap.Blend);
 
                 GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
@@ -546,10 +581,9 @@ namespace Erde.Graphics.GUI
                 m_rootElement.Size = m_resolution;
                 m_rootElement.TrueSize = a_size;
 
-                DrawElement(m_rootElement, a_size);
+                DrawElement(m_rootElement, a_size, a_size);
 
                 GL.Disable(EnableCap.Blend);
-                GL.Enable(EnableCap.DepthTest);
             }
             else
             {

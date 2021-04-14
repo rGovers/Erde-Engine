@@ -50,6 +50,18 @@ namespace Erde.Graphics.Internal
             }
         }
 
+        public bool ConsoleVisible
+        {
+            get
+            {
+                return false;
+            }
+            set
+            {
+                
+            }
+        }
+
         public NativePipeline(Pipeline a_pipeline)
         {
             m_pipeline = a_pipeline;

@@ -1,5 +1,6 @@
 using OpenTK;
 using System.Collections.Concurrent;
+using System.Drawing;
 
 namespace Erde.Graphics.GUI
 {
@@ -42,6 +43,7 @@ namespace Erde.Graphics.GUI
         e_XLockMode            m_xLockMode;
         e_YLockMode            m_yLockMode;
 
+        Vector2                m_trueDrawingPos;
         Vector2                m_truePosition;
         Vector2                m_trueSize;
 
@@ -195,6 +197,17 @@ namespace Erde.Graphics.GUI
                 m_truePosition = value;
             }
         }
+        internal Vector2 TrueDrawingPosition
+        {
+            get
+            {
+                return m_trueDrawingPos;
+            }
+            set
+            {
+                m_trueDrawingPos = value;
+            }
+        }
         internal Vector2 TrueSize
         {
             get
@@ -249,85 +262,130 @@ namespace Erde.Graphics.GUI
             }
         }
 
+        internal Vector2 GetTrueSize()
+        {
+            return GetTrueSize(m_parent.m_size, m_parent.m_trueSize);
+        }
+        internal Vector2 GetTrueSize(Vector2 a_parentSize, Vector2 a_parentTrueSize)
+        {
+            Vector2 size = Vector2.One;
+
+            if (m_xLockMode == e_XLockMode.Stretch)
+            {
+                size.X = m_size.X * a_parentTrueSize.X / a_parentSize.X;    
+            }
+            else
+            {
+                size.X = m_size.X;
+            }
+
+            if (m_yLockMode == e_YLockMode.Stretch)
+            {
+                size.Y = m_size.Y * a_parentTrueSize.Y / a_parentSize.Y;    
+            }
+            else
+            {
+                size.Y = m_size.Y;
+            }
+
+            return size;
+        }
+
+        internal Vector2 GetTruePosition()
+        {
+            return GetTruePosition(m_trueSize, m_parent.m_truePosition, m_parent.m_trueSize);
+        }
+        internal Vector2 GetTruePosition(Vector2 a_trueSize, Vector2 a_parentTruePosition, Vector2 a_parentTrueSize)
+        {
+            Vector2 position = Vector2.Zero;
+
+            switch (m_xLockMode)
+            {
+                case e_XLockMode.Left:
+                {
+                    position.X = (a_parentTruePosition.X - a_parentTrueSize.X) + (m_position.X + a_trueSize.X / 2);
+
+                    break;
+                }
+                case e_XLockMode.Middle:
+                {
+                    position.X = a_parentTruePosition.X + (m_position.X + a_trueSize.X / 2);
+
+                    break;
+                }
+                case e_XLockMode.Right:
+                {
+                    position.X = (a_parentTruePosition.X + a_parentTrueSize.X) - (m_position.X + a_trueSize.X / 2);
+
+                    break;
+                }
+                case e_XLockMode.Stretch:
+                {
+                    position.X = a_parentTruePosition.X + (m_position.X + a_trueSize.X / 2);
+
+                    break;
+                }
+            }
+
+            switch (m_yLockMode)
+            {
+                case e_YLockMode.Top:
+                {
+                    position.Y = (a_parentTruePosition.Y + a_parentTrueSize.Y) - (m_position.Y + a_trueSize.Y / 2);
+                    
+                    break;
+                }
+                case e_YLockMode.Middle:
+                {
+                    position.Y = a_parentTruePosition.Y + (m_position.Y + a_trueSize.Y / 2);
+                    
+                    break;
+                }
+                case e_YLockMode.Bottom:
+                {
+                    position.Y = (a_parentTruePosition.Y - a_parentTrueSize.Y) + (m_position.Y + a_trueSize.Y / 2);
+                    
+                    break;
+                }
+                case e_YLockMode.Stretch:
+                {
+                    position.Y = a_parentTruePosition.Y + (m_position.Y + a_trueSize.Y / 2);
+
+                    break;
+                }
+            }
+
+            return position;
+        }
+
+        internal virtual Rectangle GetActiveRect(Vector2 a_resolution)
+        {
+            return new Rectangle(0, 0, (int)a_resolution.X, (int)a_resolution.Y);
+        }
+
         protected void CalculateTrueTransform ()
         {
             if (m_parent != null)
             {
+                Vector2 pTDP = m_parent.m_trueDrawingPos;
                 Vector2 pTP = m_parent.m_truePosition;
-                Vector2 pP = m_parent.m_position;
                 Vector2 pTS = m_parent.m_trueSize;
                 Vector2 pS = m_parent.m_size;
 
-                if (m_xLockMode == e_XLockMode.Stretch)
-                {
-                    m_trueSize.X = m_size.X * pTS.X / pS.X;
-                    m_truePosition.X = pTP.X + (m_position.X + m_trueSize.X / 2);
-                }
-                else
-                {
-                    m_trueSize.X = m_size.X;
-
-                    switch (m_xLockMode)
-                    {
-                    case e_XLockMode.Left:
-                        {
-                            m_truePosition.X = (pTP.X - pTS.X) + (m_position.X + m_trueSize.X / 2);
-
-                            break;
-                        }
-                    case e_XLockMode.Middle:
-                        {
-                            m_truePosition.X = pTP.X + (m_position.X + m_trueSize.X / 2);
-
-                            break;
-                        }
-                    case e_XLockMode.Right:
-                        {
-                            m_truePosition.X = (pTP.X + pTS.X) - (m_position.X + m_trueSize.X / 2);
-
-                            break;
-                        }
-                    }
-                }
-
-                if (m_yLockMode == e_YLockMode.Stretch)
-                {
-                    m_trueSize.Y = m_size.Y * pTS.Y / pTS.Y;
-                    m_truePosition.Y = pTP.Y + (m_position.Y + m_trueSize.Y / 2);
-                }
-                else
-                {
-                    m_trueSize.Y = m_size.Y;
-
-                    switch (m_yLockMode)
-                    {
-                    case e_YLockMode.Top:
-                        {
-                            m_truePosition.Y = (pTP.Y + pTS.Y) - (m_position.Y + m_trueSize.Y / 2);
-                    
-                            break;
-                        }
-                    case e_YLockMode.Middle:
-                        {
-                            m_truePosition.Y = pTP.Y + (m_position.Y + m_trueSize.Y / 2);
-                    
-                            break;
-                        }
-                    case e_YLockMode.Bottom:
-                        {
-                            m_truePosition.Y = (pTP.Y - pTS.Y) + (m_position.Y + m_trueSize.Y / 2);
-                    
-                            break;
-                        }
-                    }
-                }
+                m_trueSize = GetTrueSize(pS, pTS);
+                m_truePosition = GetTruePosition(m_trueSize, pTP, pTS);
+                m_trueDrawingPos = GetTruePosition(m_trueSize, pTDP, pTS);
             }
         }
 
-        internal Matrix4 ToMatrix (Vector2 a_resolution)
+        internal Matrix4 ToMatrix (Vector2 a_resolution, Vector2 a_trueResolution)
         {
-            Vector3 trueSize = new Vector3(m_trueSize.X / a_resolution.X, m_trueSize.Y / a_resolution.Y, 0);
-            Vector3 truePosition = new Vector3(m_truePosition.X / a_resolution.X, m_truePosition.Y / a_resolution.Y, 0);
+            float len = a_trueResolution.Length;
+
+            float scale = 1.0f + (a_resolution - a_trueResolution).Length / len;
+
+            Vector3 trueSize = new Vector3(m_trueSize.X / a_resolution.X, m_trueSize.Y / a_resolution.Y, 0) * scale;
+            Vector3 truePosition = new Vector3(m_trueDrawingPos.X / a_resolution.X, m_trueDrawingPos.Y / a_resolution.Y, 0);
 
             return Matrix4.CreateScale(trueSize) * Matrix4.CreateTranslation(truePosition);
         }
@@ -344,7 +402,11 @@ namespace Erde.Graphics.GUI
         }
 
         internal virtual void Update (Vector2 a_resolution) { }
-        internal virtual void Draw (Vector2 a_resolution) { }
+        internal virtual Vector2 Draw (Vector2 a_resolution, Vector2 a_trueResolution) 
+        { 
+            return a_resolution; 
+        }
+        internal virtual void PostDraw(Vector2 a_resolution, Vector2 a_trueResolution) { }
         internal virtual void Repaint () { }
     }
 }

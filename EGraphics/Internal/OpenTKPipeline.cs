@@ -52,6 +52,18 @@ namespace Erde.Graphics.Internal
             }
         }
 
+        public bool ConsoleVisible
+        {
+            get
+            {
+                return m_consoleDisplay.DisplayConsole;
+            }
+            set
+            {
+                m_consoleDisplay.DisplayConsole = value;
+            }
+        }
+
         public OpenTKPipeline(Pipeline a_pipeline)
         {
             m_pipeline = a_pipeline;
@@ -232,7 +244,7 @@ namespace Erde.Graphics.Internal
 
             lock (this)
             {
-                if (m_graphics != null)
+                if (!m_shutDown && m_graphics != null)
                 {
                     if (PipelineTime.FPS <= 55.0f)
                     {
@@ -263,12 +275,12 @@ namespace Erde.Graphics.Internal
 
         public void Dispose()
         {
+            Shaders.DestroyShaders();
+
             if (!m_shutDown)
             {
                 Shutdown();
             }
-
-            Shaders.DestroyShaders();
 
             while (!m_joinable)
             {

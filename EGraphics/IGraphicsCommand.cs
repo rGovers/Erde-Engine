@@ -16,6 +16,12 @@ namespace Erde.Graphics
 
         void BindTexture(Program a_program, int a_binding, Texture a_texture, int a_index);
         
+        void BindFloat(Program a_program, int a_binding, float a_value);
+
+        void BindVector2(Program a_program, int a_binding, Vector2 a_value);
+        void BindVector3(Program a_program, int a_binding, Vector3 a_value);
+        void BindVector4(Program a_program, int a_binding, Vector4 a_value);
+
         void BindMatrix4(Program a_program, int a_binding, Matrix4 a_matrix);
         void BindMatrix4(Program a_program, int a_binding, Matrix4[] a_data);
 
