@@ -14,130 +14,156 @@ namespace Erde.Graphics.Internal.Lights
     {
         DirectionalLight m_light;
 
-        int              m_shadowBuffer;
-        int              m_shadowMap;
+        int[]            m_shadowBuffer;
+        int[]            m_shadowMap;
+
+        float[]          m_splits;
 
         public OpenTKDirectionalLight(DirectionalLight a_light)
         {
             m_light = a_light;
 
-            m_shadowMap = -1;
-            m_shadowBuffer = -1;
+            m_shadowMap = null;
+            m_shadowBuffer = null;
+
+            m_splits = null;
+        }
+        
+        public void CalculateSplits(Camera a_camera)
+        {
+            const float lamba = 0.3f;
+
+            float near = a_camera.Near;
+            float far = a_camera.Far;
+
+            float diff = far - near;
+            float ratio = far / near;
+
+            int mapCount = m_light.MapCount;
+            int splits = mapCount;
+
+            m_splits = new float[mapCount + 1];
+
+            for (int i = 0; i < splits; ++i)
+            {
+                float si = (float)i / splits;
+
+                m_splits[i] = lamba * (near * (float)Math.Pow(ratio, si)) + (1 - lamba) * (near + diff * si);
+            }
+            m_splits[mapCount] = far;
         }
 
         public void BindShadowMap (BindableContainer a_bindableContainer)
         {
-            if (m_shadowBuffer != -1)
-            {
-                OpenTKProgram program = (OpenTKProgram)DirectionalLight.LightMaterial.Program.InternalObject;
-                int handle = program.Handle;
+            if (m_shadowBuffer != null)
+            {                
+                int mapCount = m_light.MapCount;
+                for (int i = 0; i < mapCount; ++i)
+                {
+                    GL.ActiveTexture(TextureUnit.Texture0 + a_bindableContainer.Textures);
+                    GL.BindTexture(TextureTarget.Texture2D, m_shadowMap[i]);
+                    GL.Uniform1(16 + i, a_bindableContainer.Textures++);
 
-                GL.ActiveTexture(TextureUnit.Texture0 + a_bindableContainer.Textures);
-                GL.BindTexture(TextureTarget.Texture2D, m_shadowMap);
-                GL.Uniform1(4, a_bindableContainer.Textures++);
+                    Matrix4 view = m_light.GetView(i);
+                    Matrix4 proj = m_light.GetProjection(i);
 
-                Matrix4 view = m_light.View;
-                Matrix4 proj = m_light.Projection;
+                    Matrix4 viewProj = view * proj;
 
-                Matrix4 viewProj = view * proj;
+                    GL.UniformMatrix4(32 + i, false, ref viewProj);
 
-                GL.UniformMatrix4(5, false, ref viewProj);
+                    GL.Uniform1(48 + i, m_splits[i + 1]);
+                }
             }
+
+#if DEBUG_INFO
+            Pipeline.GLError("Directional Light: Bind Shadow Map: ");
+#endif
         }
-        public void BindShadowDrawing ()
+        public Frustum BindShadowDrawing (int a_index, Camera a_camera)
         {
-            if (m_shadowBuffer != -1)
+            if (m_shadowBuffer == null)
             {
-                OpenTKProgram program = (OpenTKProgram)m_light.ShadowProgram.InternalObject;
-                int handle = program.Handle;
-
-                Transform transform = m_light.Transform;
-
-                Matrix4 view = m_light.View;
-                Matrix4 proj = m_light.Projection;
-
-                float far = m_light.Far;
-
-                GL.Viewport(0, 0, DirectionalLight.MapResolution, DirectionalLight.MapResolution);
-
-                GL.UseProgram(handle);
-
-                Camera cam = Camera.MainCamera;
-
-                if (cam == null)
-                {
-                    proj = Matrix4.CreateOrthographic(far * 2, far * 2, -far, far);
-
-                    view = Matrix4.LookAt(Vector3.Zero, -transform.Forward, Vector3.UnitY);
-                }
-                else
-                {
-                    Vector4[] corners = new Vector4[]
-                    {
-                        new Vector4(1.0f, 1.0f, 1.0f, 1.0f),
-                        new Vector4(1.0f, 1.0f, -1.0f, 1.0f),
-                        new Vector4(1.0f, -1.0f, 1.0f, 1.0f),
-                        new Vector4(1.0f, -1.0f, -1.0f, 1.0f),
-                        new Vector4(-1.0f, 1.0f, 1.0f, 1.0f),
-                        new Vector4(-1.0f, 1.0f, -1.0f, 1.0f),
-                        new Vector4(-1.0f, -1.0f, 1.0f, 1.0f),
-                        new Vector4(-1.0f, -1.0f, -1.0f, 1.0f)
-                    };
-                    
-                    Matrix4 viewInv = Matrix4.Identity;
-                    Matrix4 projInv = Matrix4.Identity;
-                    lock (cam)
-                    {
-                        viewInv = cam.Transform.ToMatrix();
-                        projInv = Matrix4.Invert(cam.Projection);
-                    }
-
-                    Vector3 position = Vector3.Zero;
-
-                    Matrix3 rot3 = transform.RotationMatrix;
-                    for (int i = 0; i < corners.Length; ++i)
-                    {
-                        corners[i] = corners[i] * (projInv * viewInv);
-                        corners[i] /= corners[i].W;
-
-                        position += corners[i].Xyz /** rot3*/;
-                        corners[i] = new Vector4(rot3 * corners[i].Xyz, 1);
-                    }
-
-                    position /= corners.Length;
-
-                    view = Matrix4.LookAt(position, position - transform.Forward, Vector3.UnitY);
-
-                    Vector3 min = new Vector3(float.PositiveInfinity);
-                    Vector3 max = new Vector3(float.NegativeInfinity);
-
-                    for (int i = 0; i < corners.Length; ++i)
-                    {
-                        corners[i] = view * corners[i];
-
-                        min.X = Math.Min(corners[i].X, min.X);
-                        min.Y = Math.Min(corners[i].Y, min.Y);
-                        min.Z = Math.Min(corners[i].Z, min.Z);
-                        max.X = Math.Max(corners[i].X, max.X);
-                        max.Y = Math.Max(corners[i].Y, max.Y);
-                        max.Z = Math.Max(corners[i].Z, max.Z);
-                    }
-
-                    Vector3 halfExtent = 0.5f * (max - min);
-
-                    m_light.Far = halfExtent.Z;
-
-                    proj = Matrix4.CreateOrthographic(halfExtent.X * 2, halfExtent.Y * 2, -halfExtent.Z, halfExtent.Z);
-                }
-
-                Matrix4 viewProj = view * proj;
-
-                m_light.SetViewProjection(view, proj);
-
-                GL.UniformMatrix4(0, false, ref viewProj);
-
-                GL.BindFramebuffer(FramebufferTarget.Framebuffer, m_shadowBuffer);
+                return null;
             }
+                    
+            Transform transform = m_light.Transform;
+
+            Vector4[] corners = new Vector4[]
+            {
+                new Vector4(1.0f, 1.0f, 1.0f, 1.0f),
+                new Vector4(1.0f, 1.0f, -1.0f, 1.0f),
+                new Vector4(1.0f, -1.0f, 1.0f, 1.0f),
+                new Vector4(1.0f, -1.0f, -1.0f, 1.0f),
+                new Vector4(-1.0f, 1.0f, 1.0f, 1.0f),
+                new Vector4(-1.0f, 1.0f, -1.0f, 1.0f),
+                new Vector4(-1.0f, -1.0f, 1.0f, 1.0f),
+                new Vector4(-1.0f, -1.0f, -1.0f, 1.0f)
+            };
+
+            Matrix4 viewInv = Matrix4.Identity;
+            Matrix4 camProj = Matrix4.Identity;
+            lock (a_camera)
+            {
+                viewInv = a_camera.Transform.ToMatrix();
+                camProj = Matrix4.CreatePerspectiveFieldOfView(a_camera.FOV, a_camera.Width / (float)a_camera.Height, m_splits[a_index], m_splits[a_index + 1]);
+            }
+            Matrix4 projInv = Matrix4.Invert(camProj);
+
+            Vector3 position = Vector3.Zero;
+
+            Vector3 min = new Vector3(float.PositiveInfinity);
+            Vector3 max = new Vector3(float.NegativeInfinity);
+
+            Matrix3 rot3 = transform.RotationMatrix;
+            for (int i = 0; i < 8; ++i)
+            {
+                corners[i] = corners[i] * projInv;
+                corners[i] /= corners[i].W;
+                corners[i] = corners[i] * viewInv;
+
+                position += corners[i].Xyz * 0.125f;   
+            }
+
+            Matrix4 transformMat = Matrix4.CreateFromQuaternion(transform.Quaternion) * Matrix4.CreateTranslation(position);
+            Matrix4 view = Matrix4.Invert(transformMat);
+
+            Vector4[] endCorners = new Vector4[8];
+            for (int i = 0; i < 8; ++i)
+            {
+                endCorners[i] = corners[i] * view;
+
+                min.X = Math.Min(endCorners[i].X, min.X);
+                min.Y = Math.Min(endCorners[i].Y, min.Y);
+                min.Z = Math.Min(endCorners[i].Z, min.Z);
+
+                max.X = Math.Max(endCorners[i].X, max.X);
+                max.Y = Math.Max(endCorners[i].Y, max.Y);
+                max.Z = Math.Max(endCorners[i].Z, max.Z);
+            }
+
+            Vector3 extent = max - min;
+
+            Matrix4 proj = Matrix4.CreateOrthographic(extent.X * 2, extent.Y * 2, -extent.Z * 2, extent.Z);
+
+            Matrix4 viewProj = view * proj;
+
+            m_light.SetViewProjection(view, proj, a_index);
+
+            OpenTKProgram program = (OpenTKProgram)m_light.ShadowProgram.InternalObject;
+            int handle = program.Handle;
+
+            GL.UseProgram(handle);
+
+            GL.Viewport(0, 0, DirectionalLight.MapResolution, DirectionalLight.MapResolution);
+
+            GL.UniformMatrix4(0, false, ref viewProj);
+            GL.BindFramebuffer(FramebufferTarget.Framebuffer, m_shadowBuffer[a_index]);
+
+#if DEBUG_INFO
+            Pipeline.GLError("Directional Light: Bind Shadow Drawing: ");
+#endif
+
+            return new Frustum(viewProj);
         }
 
         public Material BindLightDrawing()
@@ -167,26 +193,35 @@ namespace Erde.Graphics.Internal.Lights
 
         public void ModifyObject()
         {
-            m_shadowMap = GL.GenTexture();
-            GL.BindTexture(TextureTarget.Texture2D, m_shadowMap);
-            GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent16, DirectionalLight.MapResolution, DirectionalLight.MapResolution, 0, PixelFormat.DepthComponent, PixelType.UnsignedByte, IntPtr.Zero);
+            int count = m_light.MapCount;
 
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)All.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)All.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (int)All.ClampToEdge);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)All.ClampToEdge);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)All.ClampToEdge);
+            m_shadowMap = new int[count];
+            GL.GenTextures(count, m_shadowMap);
+            m_shadowBuffer = new int[count];
+            GL.GenFramebuffers(count, m_shadowBuffer);
+            
+            for (int i = 0; i < count; ++i)
+            {
+                GL.BindTexture(TextureTarget.Texture2D, m_shadowMap[i]);
+                GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.DepthComponent16, DirectionalLight.MapResolution, DirectionalLight.MapResolution, 0, PixelFormat.DepthComponent, PixelType.UnsignedByte, IntPtr.Zero);
 
-            m_shadowBuffer = GL.GenFramebuffer();
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)All.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)All.Linear);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapR, (int)All.ClampToEdge);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)All.ClampToEdge);
+                GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)All.ClampToEdge);
 
-            GL.BindFramebuffer(FramebufferTarget.Framebuffer, m_shadowBuffer);
-            GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, TextureTarget.Texture2D, m_shadowMap, 0);
+                GL.BindFramebuffer(FramebufferTarget.Framebuffer, m_shadowBuffer[i]);
+                GL.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, TextureTarget.Texture2D, m_shadowMap[i], 0);
+            }
         }
 
         public void DisposeObject()
         {
-            GL.DeleteTexture(m_shadowMap);
-            GL.DeleteFramebuffer(m_shadowBuffer);
+            int count = m_light.MapCount;
+
+            GL.DeleteTextures(count, m_shadowMap);
+            GL.DeleteFramebuffers(count, m_shadowBuffer);
         }
 
         public void Dispose()

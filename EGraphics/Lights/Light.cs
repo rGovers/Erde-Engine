@@ -36,12 +36,23 @@ namespace Erde.Graphics.Lights
             get;
         }
 
-        public abstract Matrix4 View
+        public Matrix4 View
         {
-            get;
+            get
+            {
+                return GetView(0);
+            }
         }
 
-        public abstract Matrix4 Projection
+        public Matrix4 Projection
+        {
+            get
+            {
+                return GetProjection(0);
+            }
+        }
+
+        public abstract int MapCount
         {
             get;
         }
@@ -127,11 +138,16 @@ namespace Erde.Graphics.Lights
             GC.SuppressFinalize(this);
         }
 
+        public abstract void CalculateSplits(Camera a_camera);
+
         public abstract void BindShadowMap (BindableContainer a_bindableContainer);
 
-        public abstract void BindShadowDrawing ();
+        public abstract Frustum BindShadowDrawing (int a_index, Camera a_camera);
 
         public abstract Material BindLightDrawing ();
         public abstract Graphics.LightContainer GetLightData ();
+
+        public abstract Matrix4 GetView(int a_index);
+        public abstract Matrix4 GetProjection(int a_index);
     }
 }
