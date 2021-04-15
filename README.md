@@ -6,10 +6,26 @@ Erde is a C# cross platform 3D game engine for Windows and Linux. It is develope
 * Vulkan SDK
 
 ## Cloning
+### Windows
+
 ```bash
 git clone https://github.com/rGovers/Erde-Engine.git
 cd Erde-Engine
 git submodule update --init --recursive
+
+nuget restore
+
+cd ENativeApplication/lib/shaderc/
+./utils/git-sync-deps
+```
+
+### Linux
+
+```bash
+git clone https://github.com/rGovers/Erde-Engine.git
+cd Erde-Engine
+
+./setupFirstBuild.sh
 ```
 
 ## Building
